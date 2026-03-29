@@ -46,11 +46,9 @@
 </div>
 
 <div class="container product-detail">
-  <div id="product-content" class="detail-grid">
-    <!-- Filled by JS -->
-  </div>
+  <div id="product-content" class="detail-grid"></div>
 
-  <!-- You may also like -->
+  <!-- Related products -->
   <div style="margin-top:64px">
     <div class="section-header center">
       <span class="section-label">You May Also Like</span>
@@ -67,17 +65,53 @@
 <script src="app.js"></script>
 <script src="data.js"></script>
 <script>
+// qty is declared at the TOP — global to this page
+// This is the fix: inline onclick buttons can now access it
+let qty = 1;
+let currentProduct = null;
+
+function decreaseQty() {
+  if (qty > 1) {
+    qty--;
+    document.getElementById('qty-display').textContent = qty;
+  }
+}
+
+function increaseQty() {
+  qty++;
+  document.getElementById('qty-display').textContent = qty;
+}
+
+function addCurrentToCart() {
+  if (!currentProduct) return;
+  if (!currentProduct.inStock) {
+    showToast('This item is out of stock', 'error');
+    return;
+  }
+  Cart.add(currentProduct, qty);
+  openCart();
+}
+
+// Load product
 const id = parseInt(new URLSearchParams(location.search).get('id'));
 const p  = PRODUCTS.find(x => x.id === id);
 
 if (!p) {
-  document.getElementById('product-content').innerHTML = '<div style="text-align:center;padding:80px 0;grid-column:1/-1"><h2>Product not found</h2><a href="products.html" class="btn btn-primary" style="margin-top:20px;display:inline-flex">Browse Products</a></div>';
+  document.getElementById('product-content').innerHTML = `
+    <div style="text-align:center;padding:80px 0;grid-column:1/-1">
+      <h2>Product not found</h2>
+      <a href="products.html" class="btn btn-primary" style="margin-top:20px;display:inline-flex">
+        Browse Products
+      </a>
+    </div>`;
 } else {
+  currentProduct = p;
   document.title = p.name + ' – Cartora';
   document.getElementById('breadcrumb-name').textContent = p.name;
 
-  const disc = p.originalPrice ? Math.round((p.originalPrice - p.price) / p.originalPrice * 100) : null;
-  let qty = 1;
+  const disc = p.originalPrice
+    ? Math.round((p.originalPrice - p.price) / p.originalPrice * 100)
+    : null;
 
   document.getElementById('product-content').innerHTML = `
     <!-- Images -->
@@ -85,9 +119,9 @@ if (!p) {
       <img class="detail-img-main" id="main-img" src="${p.image}" alt="${p.name}"
         onerror="this.src='https://images.unsplash.com/photo-1560343090-f0409e92791a?w=600'">
       <div class="detail-thumbs">
-        <img class="detail-thumb active" src="${p.image}" alt="">
-        <img class="detail-thumb" src="https://images.unsplash.com/photo-1560343090-f0409e92791a?w=100" alt="">
-        <img class="detail-thumb" src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=100" alt="">
+        <img class="detail-thumb active" src="${p.image}" alt="Main">
+        <img class="detail-thumb" src="https://images.unsplash.com/photo-1560343090-f0409e92791a?w=100" alt="Alt 1">
+        <img class="detail-thumb" src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=100" alt="Alt 2">
       </div>
     </div>
 
@@ -97,17 +131,27 @@ if (!p) {
       <h1 class="detail-name">${p.name}</h1>
 
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-        <div class="stars" style="font-size:18px">${'★'.repeat(Math.floor(p.rating))}${'☆'.repeat(5-Math.floor(p.rating))}</div>
+        <div class="stars" style="font-size:18px">
+          ${'★'.repeat(Math.floor(p.rating))}${'☆'.repeat(5 - Math.floor(p.rating))}
+        </div>
         <span style="font-size:14px;color:var(--mid)">${p.rating} (${p.reviews} reviews)</span>
       </div>
 
       <div class="detail-price">
         ₹${p.price.toLocaleString('en-IN')}
-        ${p.originalPrice ? `<span class="detail-orig" style="font-size:18px;margin-left:10px">₹${p.originalPrice.toLocaleString('en-IN')}</span>` : ''}
-        ${disc ? `<span class="badge badge-sale" style="margin-left:10px;font-size:14px">-${disc}%</span>` : ''}
+        ${p.originalPrice
+          ? `<span class="detail-orig" style="font-size:18px;margin-left:10px">
+               ₹${p.originalPrice.toLocaleString('en-IN')}
+             </span>`
+          : ''}
+        ${disc
+          ? `<span class="badge badge-sale" style="margin-left:10px;font-size:14px">-${disc}%</span>`
+          : ''}
       </div>
 
-      ${!p.inStock ? '<div style="color:#e74c3c;font-weight:500;margin:10px 0">⚠ Out of Stock</div>' : ''}
+      ${!p.inStock
+        ? '<div style="color:#e74c3c;font-weight:500;margin:10px 0">⚠ Out of Stock</div>'
+        : ''}
 
       <p class="detail-desc">${p.description}</p>
 
@@ -119,26 +163,35 @@ if (!p) {
         </div>
       </div>
 
+      <!-- Quantity selector -->
       <div class="qty-row">
         <label style="font-size:14px;font-weight:500;color:var(--dark)">Quantity:</label>
         <div class="qty-box">
-          <button onclick="if(qty>1){qty--;document.getElementById('qty-display').textContent=qty}">−</button>
+          <button type="button" onclick="decreaseQty()">−</button>
           <span id="qty-display">1</span>
-          <button onclick="qty++;document.getElementById('qty-display').textContent=qty">+</button>
+          <button type="button" onclick="increaseQty()">+</button>
         </div>
       </div>
 
+      <!-- Add to cart & wishlist -->
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-primary" style="flex:1" ${!p.inStock?'disabled':''}
-          onclick="Cart.add(p, qty); openCart()">
-          🛍️ Add to Cart
+        <button
+          class="btn btn-primary"
+          style="flex:1"
+          ${!p.inStock ? 'disabled' : ''}
+          onclick="addCurrentToCart()">
+          🛍️ ${p.inStock ? 'Add to Cart' : 'Out of Stock'}
         </button>
         <button class="btn btn-outline"
-          onclick="showToast('${p.name} added to wishlist ♡')">♡ Wishlist</button>
+          onclick="showToast('${p.name.replace(/'/g,"\\'")} added to wishlist ♡')">
+          ♡ Wishlist
+        </button>
       </div>
 
       <div style="margin-top:24px;padding-top:24px;border-top:1px solid var(--border)">
-        <div style="font-size:13px;color:var(--light);margin-bottom:6px">Product ID: #CART-00${p.id}</div>
+        <div style="font-size:13px;color:var(--light);margin-bottom:6px">
+          Product ID: #CART-00${p.id}
+        </div>
         <div style="font-size:13px;color:var(--light)">Category: ${p.category}</div>
       </div>
     </div>`;
@@ -146,7 +199,7 @@ if (!p) {
   // Thumbnail click
   document.querySelectorAll('.detail-thumb').forEach(img => {
     img.addEventListener('click', function() {
-      document.getElementById('main-img').src = this.src.replace('w=100','w=600');
+      document.getElementById('main-img').src = this.src.replace('w=100', 'w=600');
       document.querySelectorAll('.detail-thumb').forEach(t => t.classList.remove('active'));
       this.classList.add('active');
     });
@@ -161,17 +214,26 @@ if (!p) {
           <img src="${r.image}" alt="${r.name}" loading="lazy">
         </a>
         <div class="atc-bar">
-          <button class="atc-btn" onclick="Cart.add(PRODUCTS.find(x=>x.id===${r.id}))">
+          <button class="atc-btn"
+            onclick="Cart.add(PRODUCTS.find(x=>x.id===${r.id})); openCart()">
             🛍️ Add to Cart
           </button>
         </div>
       </div>
       <div class="product-info">
         <div class="product-cat">${r.category}</div>
-        <div class="product-name"><a href="product.html?id=${r.id}">${r.name}</a></div>
+        <div class="product-name">
+          <a href="product.html?id=${r.id}">${r.name}</a>
+        </div>
+        <div class="stars">
+          ${'★'.repeat(Math.floor(r.rating))}${'☆'.repeat(5 - Math.floor(r.rating))}
+          <span>(${r.reviews})</span>
+        </div>
         <div class="product-price">
           <span class="price-curr">₹${r.price.toLocaleString('en-IN')}</span>
-          ${r.originalPrice ? `<span class="price-orig">₹${r.originalPrice.toLocaleString('en-IN')}</span>` : ''}
+          ${r.originalPrice
+            ? `<span class="price-orig">₹${r.originalPrice.toLocaleString('en-IN')}</span>`
+            : ''}
         </div>
       </div>
     </div>`).join('');
