@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Create Account – Cartora</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="toast"></div>
+
+<div class="auth-page">
+  <div class="auth-left">
+    <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=900&q=80" alt="Fashion">
+    <div class="auth-left-overlay">
+      <h2>Join Cartora</h2>
+      <p>Create your account and unlock exclusive member benefits, early access and personalised styling.</p>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <a href="index.html" class="auth-logo">Cart<span>ora</span></a>
+    <h1 class="auth-title">Create Account</h1>
+    <p class="auth-sub">Already have one? <a href="login.html" style="color:var(--accent)">Sign in</a></p>
+
+    <form id="signup-form" novalidate>
+      <div class="grid-2" style="gap:14px">
+        <div class="input-group" style="margin-bottom:0">
+          <label for="fname">First Name</label>
+          <input class="input-field" type="text" id="fname" placeholder="Ravi">
+          <div class="error-msg" id="fname-err"></div>
+        </div>
+        <div class="input-group" style="margin-bottom:0">
+          <label for="lname">Last Name</label>
+          <input class="input-field" type="text" id="lname" placeholder="Kumar">
+          <div class="error-msg" id="lname-err"></div>
+        </div>
+      </div>
+      <div style="margin-bottom:20px"></div>
+
+      <div class="input-group">
+        <label for="email">Email Address</label>
+        <input class="input-field" type="email" id="email" placeholder="you@email.com">
+        <div class="error-msg" id="email-err"></div>
+      </div>
+
+      <div class="input-group">
+        <label for="phone">Phone Number</label>
+        <input class="input-field" type="tel" id="phone" placeholder="+91 98765 43210">
+        <div class="error-msg" id="phone-err"></div>
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <div class="pw-wrap">
+          <input class="input-field" type="password" id="password" placeholder="Min. 8 characters">
+          <button type="button" class="eye-btn" id="eye-btn1">👁</button>
+        </div>
+        <ul class="pw-req" id="pw-req">
+          <li id="req-len">At least 8 characters</li>
+          <li id="req-upper">One uppercase letter</li>
+          <li id="req-num">One number</li>
+        </ul>
+        <div class="error-msg" id="pw-err"></div>
+      </div>
+
+      <div class="input-group">
+        <label for="confirm">Confirm Password</label>
+        <div class="pw-wrap">
+          <input class="input-field" type="password" id="confirm" placeholder="Re-enter password">
+          <button type="button" class="eye-btn" id="eye-btn2">👁</button>
+        </div>
+        <div class="error-msg" id="confirm-err"></div>
+      </div>
+
+      <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;margin-bottom:24px;cursor:pointer;line-height:1.5">
+        <input type="checkbox" id="terms" style="accent-color:var(--accent);margin-top:3px;flex-shrink:0">
+        I agree to Cartora's <a href="#" style="color:var(--accent)">Terms of Service</a> and <a href="#" style="color:var(--accent)">Privacy Policy</a>
+      </label>
+      <div class="error-msg" id="terms-err" style="margin-top:-18px;margin-bottom:14px"></div>
+
+      <button type="submit" class="btn btn-primary btn-full" id="signup-btn">
+        <span id="btn-text">Create Account</span>
+        <div class="spinner" id="spinner" style="display:none"></div>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+if (Auth.isLoggedIn()) window.location.href = 'dashboard.html';
+
+// Toggle password visibility
+function togglePw(inputId, btnId) {
+  document.getElementById(btnId).addEventListener('click', function() {
+    const el = document.getElementById(inputId);
+    if (el.type === 'password') { el.type = 'text'; this.textContent = '🙈'; }
+    else { el.type = 'password'; this.textContent = '👁'; }
+  });
+}
+togglePw('password', 'eye-btn1');
+togglePw('confirm',  'eye-btn2');
+
+// Live password strength checker
+document.getElementById('password').addEventListener('input', function() {
+  const val = this.value;
+  document.getElementById('req-len').className   = val.length >= 8      ? 'ok' : '';
+  document.getElementById('req-upper').className = /[A-Z]/.test(val)    ? 'ok' : '';
+  document.getElementById('req-num').className   = /\d/.test(val)       ? 'ok' : '';
+});
+
+function setErr(id, msg) {
+  const errEl = document.getElementById(id);
+  if (errEl) errEl.textContent = msg;
+  const fieldId = id.replace('-err', '');
+  const field   = document.getElementById(fieldId);
+  if (field) {
+    if (msg) field.classList.add('input-error');
+    else     field.classList.remove('input-error');
+  }
+}
+
+// Form submit
+document.getElementById('signup-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  // Clear all errors
+  ['fname','lname','email','phone','pw','confirm','terms'].forEach(id => setErr(id + '-err', ''));
+
+  const fname    = document.getElementById('fname').value.trim();
+  const lname    = document.getElementById('lname').value.trim();
+  const email    = document.getElementById('email').value.trim();
+  const phone    = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+  const confirm  = document.getElementById('confirm').value;
+  const terms    = document.getElementById('terms').checked;
+
+  // Validate
+  let valid = true;
+  if (!fname)                                    { setErr('fname-err',   'First name is required');              valid = false; }
+  if (!lname)                                    { setErr('lname-err',   'Last name is required');               valid = false; }
+  if (!email || !/\S+@\S+\.\S+/.test(email))    { setErr('email-err',   'Enter a valid email address');         valid = false; }
+  if (!phone || phone.replace(/\D/g,'').length < 10) { setErr('phone-err', 'Enter a valid 10-digit phone');     valid = false; }
+  if (!password || password.length < 8)          { setErr('pw-err',      'Password must be at least 8 characters'); valid = false; }
+  if (password !== confirm)                      { setErr('confirm-err', 'Passwords do not match');              valid = false; }
+  if (!terms)                                    { setErr('terms-err',   'You must agree to the terms');         valid = false; }
+  if (!valid) return;
+
+  document.getElementById('btn-text').textContent  = 'Creating Account…';
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('signup-btn').disabled   = true;
+
+  try {
+    // Try real backend
+    const res = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name: fname + ' ' + lname, email, phone, password })
+    });
+
+    // Backend returns email, redirect to verify page
+    showToast('Account created! Check your email for the code 📧');
+    setTimeout(() => {
+      window.location.href = 'verify.html?email=' + encodeURIComponent(res.email || email);
+    }, 1200);
+
+  } catch (err) {
+    // If backend is down (demo mode), skip verification and go straight to dashboard
+    if (err.message.includes('fetch') || err.message.includes('Failed')) {
+      const demoUser  = { id: Date.now(), name: fname + ' ' + lname, email, phone, role: 'user' };
+      const demoToken = 'demo_token_' + Date.now();
+      Auth.set(demoUser, demoToken);
+      showToast('Account created! Welcome, ' + fname + '!');
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+    } else {
+      // Real error from backend (e.g. email already exists)
+      showToast(err.message, 'error');
+      document.getElementById('btn-text').textContent  = 'Create Account';
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('signup-btn').disabled   = false;
+    }
+  }
+});
+</script>
+</body>
+</html>

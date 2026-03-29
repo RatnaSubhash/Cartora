@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Shop – Cartora</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="toast"></div>
+<div id="cart-overlay" class="cart-overlay"></div>
+<aside id="cart-sidebar" class="cart-sidebar">
+  <div class="cart-header">
+    <h3 class="serif">Your Bag</h3>
+    <button id="cart-close" style="font-size:24px;color:var(--mid)">×</button>
+  </div>
+  <div class="cart-body" id="cart-body"></div>
+  <div class="cart-footer" id="cart-footer"></div>
+</aside>
+
+<div class="ann-bar">
+  <div class="container">
+    <div style="display:flex;gap:60px;width:max-content;animation:marquee 30s linear infinite">
+      <span>✦ Free Shipping on Orders Over ₹15,000</span>
+      <span>✦ Easy 30-Day Returns</span>
+      <span>✦ Members Get 15% Off</span>
+      <span>✦ Free Shipping on Orders Over ₹15,000</span>
+      <span>✦ Easy 30-Day Returns</span>
+      <span>✦ Members Get 15% Off</span>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">Cart<span>ora</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="products.html" class="active">Shop</a></li>
+      <li><a href="products.html?filter=new">New Arrivals</a></li>
+      <li><a href="products.html?filter=sale">Sale</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="user-wrap"></div>
+      <button class="nav-icon cart-open-btn" style="position:relative">
+        🛍️<span class="cart-count" style="display:none"></span>
+      </button>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="index.html">Home</a><a href="products.html">Shop</a><a href="login.html">Login</a>
+  </div>
+</nav>
+
+<!-- Page Hero -->
+<div class="page-hero">
+  <h1 id="page-title">Our Collection</h1>
+  <p id="page-sub">BROWSE · DISCOVER · ENJOY</p>
+</div>
+
+<!-- Products Layout -->
+<div class="container products-layout">
+  <!-- Filters -->
+  <aside class="filters-panel">
+    <div class="filter-section">
+      <div class="search-bar" style="margin-bottom:0">
+        <span>🔍</span>
+        <input type="text" id="search-q" placeholder="Search products…">
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">Category</div>
+      <label class="filter-option">
+        <input type="radio" name="cat" value="All" checked> <span>All Categories</span>
+      </label>
+      <label class="filter-option" id="cat-options"></label>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">Price Range</div>
+      <div style="margin-bottom:10px">
+        <input type="range" id="price-max" min="1000" max="150000" value="150000" step="1000"
+          style="width:100%;accent-color:var(--accent)">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--light);margin-top:4px">
+          <span>₹1,000</span><span id="price-label">₹1,50,000</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">Availability</div>
+      <label class="filter-option">
+        <input type="checkbox" id="in-stock-only"> <span>In Stock Only</span>
+      </label>
+    </div>
+
+    <button class="btn btn-outline btn-full btn-sm" onclick="resetFilters()">Reset Filters</button>
+  </aside>
+
+  <!-- Products Area -->
+  <div>
+    <div class="products-top">
+      <div class="products-count" id="prod-count"></div>
+      <select class="sort-select" id="sort-select">
+        <option value="featured">Featured</option>
+        <option value="price-low">Price: Low to High</option>
+        <option value="price-high">Price: High to Low</option>
+        <option value="rating">Best Rated</option>
+        <option value="newest">Newest First</option>
+      </select>
+    </div>
+    <div class="products-grid" id="products-grid"></div>
+    <div id="no-results" style="display:none;text-align:center;padding:60px 0">
+      <div style="font-size:48px;margin-bottom:16px">🔍</div>
+      <h3 style="color:var(--dark);margin-bottom:8px">No products found</h3>
+      <p style="color:var(--mid)">Try adjusting your filters or search query</p>
+    </div>
+  </div>
+</div>
+
+<footer style="background:#2a1f18;color:rgba(255,255,255,0.5);padding:24px 0;text-align:center;font-size:13px">
+  <span>© 2025 Cartora · Web Technologies Project · 24BIT0489</span>
+</footer>
+
+<script src="app.js"></script>
+<script src="data.js"></script>
+<script>
+// Parse URL params
+const params = new URLSearchParams(location.search);
+const urlFilter = params.get('filter');
+const urlCat    = params.get('cat');
+const urlQ      = params.get('q');
+
+// Update page title
+if (urlFilter === 'new')  { document.getElementById('page-title').textContent = 'New Arrivals'; }
+if (urlFilter === 'sale') { document.getElementById('page-title').textContent = 'Sale Items'; }
+if (urlCat)               { document.getElementById('page-title').textContent = urlCat; }
+
+// Build category radio buttons
+const catOpts = document.getElementById('cat-options');
+catOpts.outerHTML = CATEGORIES.map(c =>
+  `<label class="filter-option"><input type="radio" name="cat" value="${c.name}" ${urlCat===c.name?'checked':''}> <span>${c.name}</span></label>`
+).join('') + `<label class="filter-option"><input type="radio" name="cat" value="All" ${!urlCat?'checked':''}> <span>All</span></label>`;
+
+// Search pre-fill
+if (urlQ) document.getElementById('search-q').value = urlQ;
+
+// Price range label
+document.getElementById('price-max').addEventListener('input', function() {
+  document.getElementById('price-label').textContent = '₹' + Number(this.value).toLocaleString('en-IN');
+  renderProducts();
+});
+
+// Filter change listeners
+document.querySelectorAll('input[name=cat]').forEach(r => r.addEventListener('change', renderProducts));
+document.getElementById('search-q').addEventListener('input', renderProducts);
+document.getElementById('sort-select').addEventListener('change', renderProducts);
+document.getElementById('in-stock-only').addEventListener('change', renderProducts);
+
+function getFiltered() {
+  let result = [...PRODUCTS];
+
+  // URL-based pre-filter
+  if (urlFilter === 'new')  result = result.filter(p => p.isNew);
+  if (urlFilter === 'sale') result = result.filter(p => p.originalPrice);
+
+  // Category
+  const cat = document.querySelector('input[name=cat]:checked')?.value || 'All';
+  if (cat !== 'All') result = result.filter(p => p.category === cat);
+
+  // Search
+  const q = document.getElementById('search-q').value.toLowerCase().trim();
+  if (q) result = result.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+
+  // Price
+  const maxPrice = Number(document.getElementById('price-max').value);
+  result = result.filter(p => p.price <= maxPrice);
+
+  // In stock
+  if (document.getElementById('in-stock-only').checked) result = result.filter(p => p.inStock);
+
+  // Sort
+  const sort = document.getElementById('sort-select').value;
+  if (sort === 'price-low')  result.sort((a,b) => a.price - b.price);
+  if (sort === 'price-high') result.sort((a,b) => b.price - a.price);
+  if (sort === 'rating')     result.sort((a,b) => b.rating - a.rating);
+  if (sort === 'newest')     result.sort((a,b) => (b.isNew?1:0) - (a.isNew?1:0));
+  if (sort === 'featured')   result.sort((a,b) => (b.isFeatured?1:0) - (a.isFeatured?1:0));
+
+  return result;
+}
+
+function renderProducts() {
+  const results = getFiltered();
+  const grid    = document.getElementById('products-grid');
+  const noRes   = document.getElementById('no-results');
+  document.getElementById('prod-count').textContent = results.length + ' product' + (results.length===1?'':'s') + ' found';
+
+  if (results.length === 0) {
+    grid.innerHTML = '';
+    noRes.style.display = 'block';
+    return;
+  }
+  noRes.style.display = 'none';
+
+  grid.innerHTML = results.map(p => {
+    const disc = p.originalPrice ? Math.round((p.originalPrice - p.price) / p.originalPrice * 100) : null;
+    return `
+      <div class="product-card">
+        <div class="product-img-wrap">
+          <a href="product.html?id=${p.id}">
+            <img src="${p.image}" alt="${p.name}" loading="lazy"
+              onerror="this.src='https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400'">
+          </a>
+          <div class="product-badges">
+            ${p.isNew ? '<span class="badge badge-new">New</span>' : ''}
+            ${disc    ? `<span class="badge badge-sale">-${disc}%</span>` : ''}
+            ${!p.inStock ? '<span class="badge badge-out">Sold Out</span>' : ''}
+          </div>
+          <div class="product-actions">
+            <button class="action-btn" title="Wishlist" onclick="showToast('${p.name} added to wishlist ♡')">♡</button>
+          </div>
+          <div class="atc-bar">
+            <button class="atc-btn" ${!p.inStock?'disabled':''}
+              onclick="Cart.add(PRODUCTS.find(x=>x.id===${p.id}))">
+              🛍️ ${p.inStock ? 'Add to Cart' : 'Out of Stock'}
+            </button>
+          </div>
+        </div>
+        <div class="product-info">
+          <div class="product-cat">${p.category}</div>
+          <div class="product-name"><a href="product.html?id=${p.id}">${p.name}</a></div>
+          <div class="stars">${'★'.repeat(Math.floor(p.rating))}${'☆'.repeat(5-Math.floor(p.rating))}<span>(${p.reviews})</span></div>
+          <div class="product-price">
+            <span class="price-curr">₹${p.price.toLocaleString('en-IN')}</span>
+            ${p.originalPrice ? `<span class="price-orig">₹${p.originalPrice.toLocaleString('en-IN')}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function resetFilters() {
+  document.querySelector('input[name=cat][value=All]').checked = true;
+  document.getElementById('search-q').value = '';
+  document.getElementById('price-max').value = 150000;
+  document.getElementById('price-label').textContent = '₹1,50,000';
+  document.getElementById('in-stock-only').checked = false;
+  document.getElementById('sort-select').value = 'featured';
+  renderProducts();
+}
+
+renderProducts();
+</script>
+</body>
+</html>

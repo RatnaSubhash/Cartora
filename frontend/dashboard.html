@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>My Dashboard – Cartora</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="toast"></div>
+
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">Cart<span>ora</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="products.html">Shop</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="user-wrap"></div>
+    </div>
+  </div>
+</nav>
+
+<div class="container dashboard-page">
+  <div class="dashboard-grid">
+
+    <!-- Sidebar -->
+    <aside class="dash-sidebar">
+      <div class="dash-avatar" id="dash-avatar">👤</div>
+      <div class="dash-name" id="dash-name">Loading…</div>
+      <div class="dash-role" id="dash-role"></div>
+      <nav class="dash-nav">
+        <a href="#orders"  class="active" onclick="showTab('orders',this)">📦 My Orders</a>
+        <a href="#profile" onclick="showTab('profile',this)">👤 My Profile</a>
+        <a href="#address" onclick="showTab('address',this)">📍 Addresses</a>
+        <a href="products.html" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">🛍️ Continue Shopping</a>
+        <a href="#" onclick="logoutUser()" style="color:#e74c3c">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Content -->
+    <div>
+      <!-- Orders Tab -->
+      <div id="tab-orders">
+        <div class="stat-cards">
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-val" id="total-orders">0</div>
+            <div class="stat-label">Total Orders</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-val" id="total-spent">₹0</div>
+            <div class="stat-label">Total Spent</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-val" id="delivered-count">0</div>
+            <div class="stat-label">Delivered</div>
+          </div>
+        </div>
+
+        <div style="background:var(--white);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)">
+          <h3 class="serif" style="font-size:1.2rem;margin-bottom:20px">Order History</h3>
+          <div id="orders-content">
+            <div style="text-align:center;padding:40px;color:var(--light)">Loading orders…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Tab -->
+      <div id="tab-profile" style="display:none">
+        <div style="background:var(--white);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow)">
+          <h3 class="serif" style="font-size:1.2rem;margin-bottom:24px">My Profile</h3>
+          <form id="profile-form">
+            <div class="grid-2" style="gap:14px">
+              <div class="input-group" style="margin-bottom:0">
+                <label>First Name</label>
+                <input class="input-field" id="pf-fname" placeholder="Ravi">
+              </div>
+              <div class="input-group" style="margin-bottom:0">
+                <label>Last Name</label>
+                <input class="input-field" id="pf-lname" placeholder="Kumar">
+              </div>
+            </div>
+            <div style="margin-bottom:20px"></div>
+            <div class="input-group">
+              <label>Email Address</label>
+              <input class="input-field" id="pf-email" type="email" readonly style="background:var(--bg2);cursor:not-allowed">
+              <div style="font-size:12px;color:var(--light);margin-top:4px">Email cannot be changed</div>
+            </div>
+            <div class="input-group">
+              <label>Phone Number</label>
+              <input class="input-field" id="pf-phone" placeholder="+91 98765 43210">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Address Tab -->
+      <div id="tab-address" style="display:none">
+        <div style="background:var(--white);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow)">
+          <h3 class="serif" style="font-size:1.2rem;margin-bottom:24px">Saved Addresses</h3>
+          <div id="address-list"></div>
+          <form id="add-address-form" style="margin-top:28px;padding-top:24px;border-top:1px solid var(--border)">
+            <h4 style="margin-bottom:18px;font-size:15px;color:var(--dark)">Add New Address</h4>
+            <div class="input-group">
+              <label>Address Line</label>
+              <input class="input-field" id="new-addr" placeholder="House No., Street, Area">
+            </div>
+            <div class="grid-2" style="gap:14px">
+              <div class="input-group" style="margin-bottom:0">
+                <label>City</label>
+                <input class="input-field" id="new-city" placeholder="Bengaluru">
+              </div>
+              <div class="input-group" style="margin-bottom:0">
+                <label>PIN Code</label>
+                <input class="input-field" id="new-pin" placeholder="560001">
+              </div>
+            </div>
+            <div style="margin-bottom:20px"></div>
+            <button type="button" class="btn btn-outline" onclick="addAddress()">+ Add Address</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script src="data.js"></script>
+<script>
+// Protect route
+if (!Auth.isLoggedIn()) {
+  showToast('Please login first', 'error');
+  setTimeout(() => { window.location.href = 'login.html'; }, 1000);
+}
+
+const user = Auth.get();
+
+// Fill sidebar info
+document.getElementById('dash-name').textContent = user?.name || 'Guest';
+document.getElementById('dash-role').textContent = user?.role || 'user';
+const initials = (user?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase();
+document.getElementById('dash-avatar').textContent = initials.length > 0 ? initials : '👤';
+
+// Fill profile form
+if (user) {
+  const names = (user.name || '').split(' ');
+  document.getElementById('pf-fname').value = names[0] || '';
+  document.getElementById('pf-lname').value = names.slice(1).join(' ') || '';
+  document.getElementById('pf-email').value = user.email || '';
+  document.getElementById('pf-phone').value = user.phone || '';
+}
+
+// Load orders
+async function loadOrders() {
+  const DEMO_ORDERS = [
+    { id:'ORD-148221', date:'20-03-2025', status:'Delivered', total:38499, items:3 },
+    { id:'ORD-147903', date:'15-03-2025', status:'Shipped',   total:24299, items:2 },
+    { id:'ORD-146288', date:'10-03-2025', status:'Processing',total:108999,items:1 },
+  ];
+
+  let orders = DEMO_ORDERS;
+  try {
+    orders = await apiFetch('/orders/my');
+  } catch (_) {
+    // Use demo data if backend not running
+  }
+
+  document.getElementById('total-orders').textContent   = orders.length;
+  document.getElementById('total-spent').textContent    = '₹' + orders.reduce((s,o)=>s+o.total,0).toLocaleString('en-IN');
+  document.getElementById('delivered-count').textContent = orders.filter(o=>o.status==='Delivered').length;
+
+  if (orders.length === 0) {
+    document.getElementById('orders-content').innerHTML = `
+      <div style="text-align:center;padding:48px 0">
+        <div style="font-size:48px;margin-bottom:14px">📦</div>
+        <p style="color:var(--mid);margin-bottom:16px">No orders yet</p>
+        <a href="products.html" class="btn btn-primary btn-sm">Start Shopping</a>
+      </div>`;
+    return;
+  }
+
+  const statusClass = s => ({
+    'Delivered':'status-delivered','Shipped':'status-shipped',
+    'Processing':'status-processing','Pending':'status-pending'
+  }[s] || 'status-pending');
+
+  document.getElementById('orders-content').innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orders.map(o => `
+            <tr>
+              <td style="font-weight:500;color:var(--dark)">${o.id}</td>
+              <td>${o.date}</td>
+              <td>${o.items} item${o.items > 1 ? 's' : ''}</td>
+              <td style="font-weight:600;color:var(--dark)">₹${Number(o.total).toLocaleString('en-IN')}</td>
+              <td><span class="status-badge ${statusClass(o.status)}">${o.status}</span></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+loadOrders();
+
+// Addresses
+let addresses = JSON.parse(localStorage.getItem('cartora_addresses') || '[]');
+function renderAddresses() {
+  if (addresses.length === 0) {
+    document.getElementById('address-list').innerHTML = '<p style="color:var(--light);font-size:14px">No saved addresses yet.</p>';
+    return;
+  }
+  document.getElementById('address-list').innerHTML = addresses.map((a,i) => `
+    <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:start">
+      <div>
+        <div style="font-size:14px;color:var(--dark);font-weight:500">${a.addr}</div>
+        <div style="font-size:13px;color:var(--mid);margin-top:4px">${a.city} – ${a.pin}</div>
+      </div>
+      <button onclick="removeAddress(${i})" style="color:var(--light);font-size:18px;background:none;border:none;cursor:pointer;padding:0 4px">×</button>
+    </div>`).join('');
+}
+function addAddress() {
+  const addr = document.getElementById('new-addr').value.trim();
+  const city = document.getElementById('new-city').value.trim();
+  const pin  = document.getElementById('new-pin').value.trim();
+  if (!addr || !city || !pin) { showToast('Fill all address fields','error'); return; }
+  addresses.push({ addr, city, pin });
+  localStorage.setItem('cartora_addresses', JSON.stringify(addresses));
+  document.getElementById('new-addr').value = '';
+  document.getElementById('new-city').value = '';
+  document.getElementById('new-pin').value  = '';
+  renderAddresses();
+  showToast('Address added!');
+}
+function removeAddress(i) {
+  addresses.splice(i, 1);
+  localStorage.setItem('cartora_addresses', JSON.stringify(addresses));
+  renderAddresses();
+}
+renderAddresses();
+
+function saveProfile() {
+  const fname = document.getElementById('pf-fname').value.trim();
+  const lname = document.getElementById('pf-lname').value.trim();
+  const phone = document.getElementById('pf-phone').value.trim();
+  const updated = { ...user, name: fname + ' ' + lname, phone };
+  Auth.set(updated, Auth.getToken());
+  document.getElementById('dash-name').textContent = updated.name;
+  showToast('Profile updated!');
+}
+
+function showTab(name, el) {
+  event.preventDefault();
+  ['orders','profile','address'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.dash-nav a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>

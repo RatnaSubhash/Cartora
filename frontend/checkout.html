@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Checkout – Cartora</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="toast"></div>
+
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">Cart<span>ora</span></a>
+    <div style="font-size:13px;color:var(--mid)">🔒 Secure Checkout</div>
+  </div>
+</nav>
+
+<div class="container checkout-page">
+  <div class="checkout-grid">
+
+    <!-- Left: Form -->
+    <div>
+      <!-- Steps indicator -->
+      <div class="step-indicator">
+        <div class="step active" id="step-1">
+          <div class="step-num">1</div> Contact
+        </div>
+        <div class="step" id="step-2">
+          <div class="step-num">2</div> Shipping
+        </div>
+        <div class="step" id="step-3">
+          <div class="step-num">3</div> Payment
+        </div>
+      </div>
+
+      <!-- Step 1: Contact -->
+      <div class="checkout-panel" id="panel-1">
+        <h2 class="serif" style="font-size:1.4rem;margin-bottom:24px">Contact Details</h2>
+        <div class="grid-2" style="gap:14px">
+          <div class="input-group" style="margin-bottom:0">
+            <label>First Name</label>
+            <input class="input-field" id="first-name" placeholder="Ravi">
+            <div class="error-msg" id="fn-err"></div>
+          </div>
+          <div class="input-group" style="margin-bottom:0">
+            <label>Last Name</label>
+            <input class="input-field" id="last-name" placeholder="Kumar">
+            <div class="error-msg" id="ln-err"></div>
+          </div>
+        </div>
+        <div style="margin-bottom:20px"></div>
+        <div class="input-group">
+          <label>Email Address</label>
+          <input class="input-field" type="email" id="c-email" placeholder="you@email.com">
+          <div class="error-msg" id="em-err"></div>
+        </div>
+        <div class="input-group">
+          <label>Phone Number</label>
+          <input class="input-field" type="tel" id="c-phone" placeholder="+91 98765 43210">
+          <div class="error-msg" id="ph-err"></div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="goStep(2)">Continue to Shipping →</button>
+      </div>
+
+      <!-- Step 2: Shipping (hidden initially) -->
+      <div class="checkout-panel" id="panel-2" style="display:none">
+        <h2 class="serif" style="font-size:1.4rem;margin-bottom:24px">Shipping Address</h2>
+        <div class="input-group">
+          <label>Address Line 1</label>
+          <input class="input-field" id="addr1" placeholder="House/Flat No., Street Name">
+          <div class="error-msg" id="a1-err"></div>
+        </div>
+        <div class="input-group">
+          <label>Address Line 2 <span style="color:var(--light)">(optional)</span></label>
+          <input class="input-field" id="addr2" placeholder="Area, Landmark">
+        </div>
+        <div class="grid-2" style="gap:14px">
+          <div class="input-group" style="margin-bottom:0">
+            <label>City</label>
+            <input class="input-field" id="city" placeholder="Bengaluru">
+            <div class="error-msg" id="ci-err"></div>
+          </div>
+          <div class="input-group" style="margin-bottom:0">
+            <label>State</label>
+            <select class="input-field" id="state">
+              <option>Karnataka</option><option>Tamil Nadu</option><option>Andhra Pradesh</option>
+              <option>Telangana</option><option>Maharashtra</option><option>Delhi</option>
+              <option>Gujarat</option><option>Rajasthan</option><option>Uttar Pradesh</option>
+              <option>West Bengal</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:20px"></div>
+        <div class="input-group">
+          <label>PIN Code</label>
+          <input class="input-field" type="text" id="pin" placeholder="560001" maxlength="6">
+          <div class="error-msg" id="pi-err"></div>
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
+          <button class="btn btn-primary" style="flex:1" onclick="goStep(3)">Continue to Payment →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Payment (hidden initially) -->
+      <div class="checkout-panel" id="panel-3" style="display:none">
+        <h2 class="serif" style="font-size:1.4rem;margin-bottom:24px">Payment Details</h2>
+
+        <!-- Payment method tabs -->
+        <div style="display:flex;gap:10px;margin-bottom:24px">
+          <button class="pay-tab active" data-tab="card" onclick="switchPayTab('card', this)">
+            💳 Card
+          </button>
+          <button class="pay-tab" data-tab="upi" onclick="switchPayTab('upi', this)">
+            📱 UPI
+          </button>
+          <button class="pay-tab" data-tab="cod" onclick="switchPayTab('cod', this)">
+            💵 Cash on Delivery
+          </button>
+        </div>
+        <style>
+          .pay-tab {
+            flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+            font-size:13px;font-weight:500;color:var(--mid);transition:var(--transition);cursor:pointer;background:var(--white);
+          }
+          .pay-tab.active { border-color:var(--accent);color:var(--accent);background:rgba(199,107,57,0.06); }
+        </style>
+
+        <!-- Card form -->
+        <div id="tab-card">
+          <div class="input-group">
+            <label>Name on Card</label>
+            <input class="input-field" id="card-name" placeholder="RAVI KUMAR">
+            <div class="error-msg" id="cn-err"></div>
+          </div>
+          <div class="input-group">
+            <label>Card Number</label>
+            <input class="input-field" id="card-num" placeholder="1234  5678  9012  3456" maxlength="19">
+            <div class="error-msg" id="cnum-err"></div>
+          </div>
+          <div class="grid-2" style="gap:14px">
+            <div class="input-group" style="margin-bottom:0">
+              <label>Expiry Date</label>
+              <input class="input-field" id="expiry" placeholder="MM / YY" maxlength="7">
+              <div class="error-msg" id="exp-err"></div>
+            </div>
+            <div class="input-group" style="margin-bottom:0">
+              <label>CVV</label>
+              <input class="input-field" id="cvv" placeholder="•••" maxlength="3" type="password">
+              <div class="error-msg" id="cvv-err"></div>
+            </div>
+          </div>
+          <div style="margin-bottom:20px"></div>
+        </div>
+
+        <!-- UPI form -->
+        <div id="tab-upi" style="display:none">
+          <div class="input-group">
+            <label>UPI ID</label>
+            <input class="input-field" id="upi-id" placeholder="yourname@upi">
+          </div>
+        </div>
+
+        <!-- COD -->
+        <div id="tab-cod" style="display:none">
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:16px;font-size:14px;color:var(--mid)">
+            ₹50 cash handling fee will be added at delivery. Please keep exact change ready.
+          </div>
+          <div style="margin-bottom:20px"></div>
+        </div>
+
+        <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:14px;font-size:13px;color:var(--mid);margin-bottom:20px;display:flex;align-items:center;gap:10px">
+          🔒 Your payment information is encrypted and secure.
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="btn btn-outline" onclick="goStep(2)">← Back</button>
+          <button class="btn btn-primary" style="flex:1" id="place-order-btn" onclick="placeOrder()">
+            Place Order 🎉
+          </button>
+        </div>
+      </div>
+
+      <!-- Success screen -->
+      <div class="checkout-panel" id="panel-success" style="display:none;text-align:center;padding:48px">
+        <div style="font-size:64px;margin-bottom:20px">🎉</div>
+        <h2 class="serif" style="font-size:2rem;margin-bottom:12px">Order Placed!</h2>
+        <p style="color:var(--mid);margin-bottom:8px">Your order has been confirmed.</p>
+        <p style="color:var(--mid);margin-bottom:8px" id="success-email-msg"></p>
+        <p style="font-size:13px;color:var(--light);margin-bottom:28px">Order ID: <strong id="order-id" style="color:var(--dark)"></strong></p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="dashboard.html" class="btn btn-primary">View My Orders</a>
+          <a href="products.html" class="btn btn-outline">Continue Shopping</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Order Summary -->
+    <div class="order-summary" id="order-summary">
+      <h3 class="serif" style="font-size:1.2rem;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        Order Summary
+      </h3>
+      <div id="summary-items"></div>
+      <div id="summary-totals" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)"></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script src="data.js"></script>
+<script>
+let currentStep = 1;
+let payMethod = 'card';
+
+// Redirect if cart empty
+window.addEventListener('DOMContentLoaded', () => {
+  if (Cart.count() === 0) {
+    showToast('Your cart is empty!', 'error');
+    setTimeout(() => { window.location.href = 'products.html'; }, 1200);
+    return;
+  }
+  renderSummary();
+
+  // Pre-fill if user logged in
+  const user = Auth.get();
+  if (user) {
+    const names = (user.name || '').split(' ');
+    if (document.getElementById('first-name')) document.getElementById('first-name').value = names[0] || '';
+    if (document.getElementById('last-name'))  document.getElementById('last-name').value  = names.slice(1).join(' ') || '';
+    if (document.getElementById('c-email'))    document.getElementById('c-email').value    = user.email || '';
+    if (document.getElementById('c-phone'))    document.getElementById('c-phone').value    = user.phone || '';
+  }
+});
+
+// Card number formatter
+document.getElementById('card-num')?.addEventListener('input', function() {
+  let v = this.value.replace(/\D/g,'').substring(0,16);
+  this.value = v.replace(/(.{4})/g,'$1  ').trim();
+});
+document.getElementById('expiry')?.addEventListener('input', function() {
+  let v = this.value.replace(/\D/g,'').substring(0,4);
+  if (v.length > 2) v = v.substring(0,2) + ' / ' + v.substring(2);
+  this.value = v;
+});
+
+function switchPayTab(tab, btn) {
+  payMethod = tab;
+  document.querySelectorAll('.pay-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['card','upi','cod'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+function renderSummary() {
+  const items = Cart.get();
+  const ship  = Cart.total() > 15000 ? 0 : 499;
+  const gst   = Math.round(Cart.total() * 0.18);
+  const total = Cart.total() + ship + gst;
+
+  document.getElementById('summary-items').innerHTML = items.map(i => {
+    const prod = PRODUCTS.find(p => p.id === i.id) || i;
+    return `
+      <div class="order-item">
+        <img src="${prod.image}" alt="${prod.name}"
+          onerror="this.src='https://images.unsplash.com/photo-1560343090-f0409e92791a?w=64'">
+        <div>
+          <div class="order-item-name">${prod.name}</div>
+          <div class="order-item-qty">Qty: ${i.quantity}</div>
+        </div>
+        <div class="order-item-price">₹${(prod.price * i.quantity).toLocaleString('en-IN')}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('summary-totals').innerHTML = `
+    <div class="summary-row"><span>Subtotal</span><span>₹${Cart.total().toLocaleString('en-IN')}</span></div>
+    <div class="summary-row"><span>Shipping</span><span>${ship===0?'FREE':'₹'+ship.toLocaleString('en-IN')}</span></div>
+    <div class="summary-row"><span>GST (18%)</span><span>₹${gst.toLocaleString('en-IN')}</span></div>
+    <div class="summary-total"><span>Total</span><span>₹${total.toLocaleString('en-IN')}</span></div>`;
+}
+
+function goStep(step) {
+  // Validate current step before moving forward
+  if (step > currentStep) {
+    if (!validateStep(currentStep)) return;
+  }
+  // Update UI
+  for (let i = 1; i <= 3; i++) {
+    const s = document.getElementById('step-'+i);
+    s.className = 'step' + (i === step ? ' active' : i < step ? ' done' : '');
+    document.getElementById('panel-'+i).style.display = i === step ? 'block' : 'none';
+  }
+  currentStep = step;
+  window.scrollTo({ top: 0, behavior:'smooth' });
+}
+
+function validateStep(step) {
+  let ok = true;
+  const req = id => {
+    const el = document.getElementById(id);
+    const errId = id.replace(/-.*/, '') + '-err';
+    // Try to find matching error div
+    const allErrs = document.querySelectorAll('.error-msg');
+    if (!el || !el.value.trim()) {
+      if (el) el.classList.add('input-error');
+      return false;
+    }
+    if (el) el.classList.remove('input-error');
+    return true;
+  };
+
+  if (step === 1) {
+    if (!document.getElementById('first-name').value.trim()) {
+      document.getElementById('fn-err').textContent = 'Required';
+      document.getElementById('first-name').classList.add('input-error'); ok = false;
+    }
+    if (!document.getElementById('last-name').value.trim()) {
+      document.getElementById('ln-err').textContent = 'Required';
+      document.getElementById('last-name').classList.add('input-error'); ok = false;
+    }
+    const em = document.getElementById('c-email').value.trim();
+    if (!em || !/\S+@\S+\.\S+/.test(em)) {
+      document.getElementById('em-err').textContent = 'Valid email required';
+      document.getElementById('c-email').classList.add('input-error'); ok = false;
+    }
+    const ph = document.getElementById('c-phone').value.replace(/\D/g,'');
+    if (ph.length < 10) {
+      document.getElementById('ph-err').textContent = 'Valid phone required';
+      document.getElementById('c-phone').classList.add('input-error'); ok = false;
+    }
+  }
+  if (step === 2) {
+    if (!document.getElementById('addr1').value.trim()) {
+      document.getElementById('a1-err').textContent = 'Address is required';
+      document.getElementById('addr1').classList.add('input-error'); ok = false;
+    }
+    if (!document.getElementById('city').value.trim()) {
+      document.getElementById('ci-err').textContent = 'City is required';
+      document.getElementById('city').classList.add('input-error'); ok = false;
+    }
+    const pin = document.getElementById('pin').value.replace(/\D/g,'');
+    if (pin.length !== 6) {
+      document.getElementById('pi-err').textContent = '6-digit PIN code required';
+      document.getElementById('pin').classList.add('input-error'); ok = false;
+    }
+  }
+  return ok;
+}
+
+async function placeOrder() {
+  if (payMethod === 'card') {
+    const cn = document.getElementById('card-name').value.trim();
+    const cnum = document.getElementById('card-num').value.replace(/\s/g,'');
+    const exp = document.getElementById('expiry').value.trim();
+    const cvv = document.getElementById('cvv').value.trim();
+    let ok = true;
+    if (!cn) { document.getElementById('cn-err').textContent = 'Required'; ok = false; }
+    if (cnum.length < 16) { document.getElementById('cnum-err').textContent = 'Enter valid card number'; ok = false; }
+    if (!exp || exp.length < 7) { document.getElementById('exp-err').textContent = 'Enter MM / YY'; ok = false; }
+    if (cvv.length < 3) { document.getElementById('cvv-err').textContent = 'Enter 3-digit CVV'; ok = false; }
+    if (!ok) return;
+  }
+
+  const btn = document.getElementById('place-order-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Processing…';
+
+  // Simulate payment processing delay
+  await new Promise(r => setTimeout(r, 1800));
+
+  const orderId = 'ORD-' + Date.now().toString().slice(-6);
+  const email   = document.getElementById('c-email').value;
+  const name    = document.getElementById('first-name').value;
+  const items   = Cart.get();
+  const total   = Cart.total() + (Cart.total() > 15000 ? 0 : 499) + Math.round(Cart.total() * 0.18);
+
+  // Try to save to backend
+  try {
+    await apiFetch('/orders', {
+      method: 'POST',
+      body: JSON.stringify({
+        orderId, email, name,
+        items: items.map(i => ({ productId: i.id, quantity: i.quantity, price: i.price })),
+        total,
+        address: document.getElementById('addr1').value + ', ' + document.getElementById('city').value
+      })
+    });
+  } catch (_) {
+    // Backend not running — demo mode, still proceed
+  }
+
+  Cart.clear();
+
+  // Show success
+  for (let i = 1; i <= 3; i++) document.getElementById('panel-'+i).style.display = 'none';
+  document.getElementById('panel-success').style.display = 'block';
+  document.getElementById('order-id').textContent = orderId;
+  document.getElementById('success-email-msg').textContent =
+    `A confirmation email has been sent to ${email}`;
+  document.getElementById('order-summary').style.display = 'none';
+  showToast('Order placed successfully! 🎉');
+}
+</script>
+</body>
+</html>

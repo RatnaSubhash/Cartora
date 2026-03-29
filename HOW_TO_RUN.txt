@@ -1,0 +1,77 @@
+==================================================
+  CARTORA — How to Run
+  Web Technologies Project | 24BIT0489
+==================================================
+
+STEP 1 — Open this folder in VS Code
+   File → Open Folder → select the "cartora_v2" folder
+
+STEP 2 — Open Terminal in VS Code
+   Press Ctrl + ` (the key above Tab)
+
+STEP 3 — Go into the backend folder
+   Type this and press Enter:
+   cd backend
+
+STEP 4 — Install packages (do this ONCE only)
+   Type this and press Enter:
+   npm install
+   Wait for it to finish. You will see "added X packages"
+
+STEP 5 — Start the server
+   Type this and press Enter:
+   node server.js
+
+   You should see:
+   ╔══════════════════════════════════╗
+   ║  CARTORA Backend Running         ║
+   ║  http://localhost:5000           ║
+   ╚══════════════════════════════════╝
+
+STEP 6 — Open the website
+   Go to your browser and type:
+   http://localhost:5000
+
+   DO NOT open the HTML files by double-clicking.
+   Always use http://localhost:5000
+
+==================================================
+  DEMO ACCOUNTS (work immediately, no signup)
+==================================================
+  User:  user@example.com   / password123
+  Admin: admin@example.com  / password123
+
+==================================================
+  TO CREATE YOUR OWN ACCOUNT
+==================================================
+  1. Server must be running (Step 5 above)
+  2. Go to http://localhost:5000/signup.html
+  3. Fill the form and click Create Account
+  4. The 6-digit OTP will appear in your terminal
+     (look at the VS Code terminal where server is running)
+  5. Copy that number, enter it on the verify page
+  6. You are now logged in!
+
+==================================================
+  FOR EMAIL NOTIFICATIONS (optional)
+==================================================
+  Open backend/.env and fill in:
+  GMAIL_USER=youremail@gmail.com
+  GMAIL_PASS=your_16_char_app_password
+
+  To get App Password:
+  Google Account → Security → 2-Step Verification
+  → App Passwords → Mail → Generate
+
+  Without this, OTPs still work — they just print
+  in the terminal instead of going to your email.
+
+==================================================
+  IF YOU GET AN ERROR
+==================================================
+  - "Cannot find module" → run npm install again
+  - "Port in use" → close other terminals and retry
+  - Website not loading → make sure server is running
+  - Wrong folder → make sure terminal shows \backend
+
+==================================================

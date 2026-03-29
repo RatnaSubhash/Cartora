@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Product – Cartora</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="toast"></div>
+<div id="cart-overlay" class="cart-overlay"></div>
+<aside id="cart-sidebar" class="cart-sidebar">
+  <div class="cart-header">
+    <h3 class="serif">Your Bag</h3>
+    <button id="cart-close" style="font-size:24px;color:var(--mid)">×</button>
+  </div>
+  <div class="cart-body" id="cart-body"></div>
+  <div class="cart-footer" id="cart-footer"></div>
+</aside>
+
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">Cart<span>ora</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="products.html" class="active">Shop</a></li>
+      <li><a href="products.html?filter=new">New Arrivals</a></li>
+      <li><a href="products.html?filter=sale">Sale</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="user-wrap"></div>
+      <button class="nav-icon cart-open-btn" style="position:relative">
+        🛍️<span class="cart-count" style="display:none"></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Breadcrumb -->
+<div style="background:var(--bg2);padding:14px 0;border-bottom:1px solid var(--border)">
+  <div class="container" style="font-size:13px;color:var(--light)">
+    <a href="index.html" style="color:var(--light)">Home</a> &nbsp;/&nbsp;
+    <a href="products.html" style="color:var(--light)">Shop</a> &nbsp;/&nbsp;
+    <span id="breadcrumb-name" style="color:var(--dark)">Product</span>
+  </div>
+</div>
+
+<div class="container product-detail">
+  <div id="product-content" class="detail-grid">
+    <!-- Filled by JS -->
+  </div>
+
+  <!-- You may also like -->
+  <div style="margin-top:64px">
+    <div class="section-header center">
+      <span class="section-label">You May Also Like</span>
+      <h2 class="section-title">Related Products</h2>
+    </div>
+    <div class="grid-4" id="related-grid"></div>
+  </div>
+</div>
+
+<footer style="background:#2a1f18;color:rgba(255,255,255,0.5);padding:24px 0;text-align:center;font-size:13px;margin-top:60px">
+  © 2025 Cartora · Web Technologies Project · 24BIT0489
+</footer>
+
+<script src="app.js"></script>
+<script src="data.js"></script>
+<script>
+const id = parseInt(new URLSearchParams(location.search).get('id'));
+const p  = PRODUCTS.find(x => x.id === id);
+
+if (!p) {
+  document.getElementById('product-content').innerHTML = '<div style="text-align:center;padding:80px 0;grid-column:1/-1"><h2>Product not found</h2><a href="products.html" class="btn btn-primary" style="margin-top:20px;display:inline-flex">Browse Products</a></div>';
+} else {
+  document.title = p.name + ' – Cartora';
+  document.getElementById('breadcrumb-name').textContent = p.name;
+
+  const disc = p.originalPrice ? Math.round((p.originalPrice - p.price) / p.originalPrice * 100) : null;
+  let qty = 1;
+
+  document.getElementById('product-content').innerHTML = `
+    <!-- Images -->
+    <div>
+      <img class="detail-img-main" id="main-img" src="${p.image}" alt="${p.name}"
+        onerror="this.src='https://images.unsplash.com/photo-1560343090-f0409e92791a?w=600'">
+      <div class="detail-thumbs">
+        <img class="detail-thumb active" src="${p.image}" alt="">
+        <img class="detail-thumb" src="https://images.unsplash.com/photo-1560343090-f0409e92791a?w=100" alt="">
+        <img class="detail-thumb" src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=100" alt="">
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div>
+      <div class="detail-cat">${p.category}</div>
+      <h1 class="detail-name">${p.name}</h1>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div class="stars" style="font-size:18px">${'★'.repeat(Math.floor(p.rating))}${'☆'.repeat(5-Math.floor(p.rating))}</div>
+        <span style="font-size:14px;color:var(--mid)">${p.rating} (${p.reviews} reviews)</span>
+      </div>
+
+      <div class="detail-price">
+        ₹${p.price.toLocaleString('en-IN')}
+        ${p.originalPrice ? `<span class="detail-orig" style="font-size:18px;margin-left:10px">₹${p.originalPrice.toLocaleString('en-IN')}</span>` : ''}
+        ${disc ? `<span class="badge badge-sale" style="margin-left:10px;font-size:14px">-${disc}%</span>` : ''}
+      </div>
+
+      ${!p.inStock ? '<div style="color:#e74c3c;font-weight:500;margin:10px 0">⚠ Out of Stock</div>' : ''}
+
+      <p class="detail-desc">${p.description}</p>
+
+      <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;font-size:14px">
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
+          <span>🚚 Free shipping on orders ₹15,000+</span>
+          <span>🔄 Easy 30-day returns</span>
+          <span>🔒 Secure checkout</span>
+        </div>
+      </div>
+
+      <div class="qty-row">
+        <label style="font-size:14px;font-weight:500;color:var(--dark)">Quantity:</label>
+        <div class="qty-box">
+          <button onclick="if(qty>1){qty--;document.getElementById('qty-display').textContent=qty}">−</button>
+          <span id="qty-display">1</span>
+          <button onclick="qty++;document.getElementById('qty-display').textContent=qty">+</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" style="flex:1" ${!p.inStock?'disabled':''}
+          onclick="Cart.add(p, qty); openCart()">
+          🛍️ Add to Cart
+        </button>
+        <button class="btn btn-outline"
+          onclick="showToast('${p.name} added to wishlist ♡')">♡ Wishlist</button>
+      </div>
+
+      <div style="margin-top:24px;padding-top:24px;border-top:1px solid var(--border)">
+        <div style="font-size:13px;color:var(--light);margin-bottom:6px">Product ID: #CART-00${p.id}</div>
+        <div style="font-size:13px;color:var(--light)">Category: ${p.category}</div>
+      </div>
+    </div>`;
+
+  // Thumbnail click
+  document.querySelectorAll('.detail-thumb').forEach(img => {
+    img.addEventListener('click', function() {
+      document.getElementById('main-img').src = this.src.replace('w=100','w=600');
+      document.querySelectorAll('.detail-thumb').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Related products
+  const related = PRODUCTS.filter(x => x.category === p.category && x.id !== p.id).slice(0, 4);
+  document.getElementById('related-grid').innerHTML = related.map(r => `
+    <div class="product-card">
+      <div class="product-img-wrap">
+        <a href="product.html?id=${r.id}">
+          <img src="${r.image}" alt="${r.name}" loading="lazy">
+        </a>
+        <div class="atc-bar">
+          <button class="atc-btn" onclick="Cart.add(PRODUCTS.find(x=>x.id===${r.id}))">
+            🛍️ Add to Cart
+          </button>
+        </div>
+      </div>
+      <div class="product-info">
+        <div class="product-cat">${r.category}</div>
+        <div class="product-name"><a href="product.html?id=${r.id}">${r.name}</a></div>
+        <div class="product-price">
+          <span class="price-curr">₹${r.price.toLocaleString('en-IN')}</span>
+          ${r.originalPrice ? `<span class="price-orig">₹${r.originalPrice.toLocaleString('en-IN')}</span>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>

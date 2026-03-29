@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Login – Cartora</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="toast"></div>
+
+<div class="auth-page">
+  <div class="auth-left">
+    <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=900&q=80" alt="Fashion">
+    <div class="auth-left-overlay">
+      <h2>Welcome Back</h2>
+      <p>Sign in to access your orders, wishlist and exclusive member benefits.</p>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <a href="index.html" class="auth-logo">Cart<span>ora</span></a>
+
+    <h1 class="auth-title">Sign In</h1>
+    <p class="auth-sub">Don't have an account? <a href="signup.html" style="color:var(--accent)">Create one</a></p>
+
+    <form id="login-form" novalidate>
+      <div class="input-group">
+        <label for="email">Email Address</label>
+        <input class="input-field" type="email" id="email" placeholder="you@email.com" autocomplete="email">
+        <div class="error-msg" id="email-err"></div>
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <div class="pw-wrap">
+          <input class="input-field" type="password" id="password" placeholder="Your password" autocomplete="current-password">
+          <button type="button" class="eye-btn" id="eye-btn">👁</button>
+        </div>
+        <div class="error-msg" id="pw-err"></div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
+          <input type="checkbox" id="remember" style="accent-color:var(--accent)">
+          Remember me
+        </label>
+        <!-- Now links to real forgot password page -->
+        <a href="forgot-password.html" style="font-size:13px;color:var(--accent)">
+          Forgot password?
+        </a>
+      </div>
+
+      <!-- General error -->
+      <div id="auth-error"
+        style="display:none;background:#fce4ec;border:1px solid #f48fb1;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px;font-size:14px;color:#c62828">
+      </div>
+
+      <!-- Unverified email prompt -->
+      <div id="verify-prompt"
+        style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:20px;font-size:14px;color:#f57f17">
+        Your email address has not been verified yet.
+        <button id="go-verify-btn"
+          style="display:block;margin-top:8px;color:var(--accent);font-weight:600;font-size:14px;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline"
+          onclick="goToVerify()">
+          Click here to verify your email →
+        </button>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+        <span id="btn-text">Sign In</span>
+        <div class="spinner" id="spinner" style="display:none"></div>
+      </button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <p style="font-size:12px;color:var(--light);text-align:center;line-height:1.6">
+      By signing in you agree to our
+      <a href="#" style="color:var(--accent)">Terms of Service</a> and
+      <a href="#" style="color:var(--accent)">Privacy Policy</a>.
+    </p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+if (Auth.isLoggedIn()) window.location.href = 'dashboard.html';
+
+let unverifiedEmail = '';
+
+// Eye toggle
+document.getElementById('eye-btn').addEventListener('click', function() {
+  const pw = document.getElementById('password');
+  if (pw.type === 'password') { pw.type = 'text'; this.textContent = '🙈'; }
+  else { pw.type = 'password'; this.textContent = '👁'; }
+});
+
+// Clear errors on typing
+['email','password'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    document.getElementById(id === 'email' ? 'email-err' : 'pw-err').textContent = '';
+    document.getElementById(id).classList.remove('input-error');
+    document.getElementById('auth-error').style.display    = 'none';
+    document.getElementById('verify-prompt').style.display = 'none';
+  });
+});
+
+function goToVerify() {
+  if (unverifiedEmail)
+    window.location.href = 'verify.html?email=' + encodeURIComponent(unverifiedEmail);
+}
+
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const email = document.getElementById('email').value.trim();
+  const pw    = document.getElementById('password').value;
+
+  document.getElementById('auth-error').style.display    = 'none';
+  document.getElementById('verify-prompt').style.display = 'none';
+
+  let valid = true;
+  if (!email || !/\S+@\S+\.\S+/.test(email)) {
+    document.getElementById('email-err').textContent = 'Please enter a valid email address';
+    document.getElementById('email').classList.add('input-error');
+    valid = false;
+  }
+  if (!pw || pw.length < 6) {
+    document.getElementById('pw-err').textContent = 'Password must be at least 6 characters';
+    document.getElementById('password').classList.add('input-error');
+    valid = false;
+  }
+  if (!valid) return;
+
+  document.getElementById('btn-text').textContent  = 'Signing in…';
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('login-btn').disabled    = true;
+
+  try {
+    let user, token;
+
+    try {
+      const res  = await fetch('http://localhost:5000/api/auth/login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email, password: pw })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.needsVerification) {
+          unverifiedEmail = data.email || email;
+          document.getElementById('verify-prompt').style.display = 'block';
+          document.getElementById('btn-text').textContent  = 'Sign In';
+          document.getElementById('spinner').style.display = 'none';
+          document.getElementById('login-btn').disabled    = false;
+          return;
+        }
+        throw new Error(data.error || 'Login failed');
+      }
+
+      user  = data.user;
+      token = data.token;
+
+    } catch (fetchErr) {
+      if (fetchErr.name === 'TypeError' || fetchErr.message.includes('fetch')) {
+        const demo = [
+          { id:1, name:'Ravi Kumar',   email:'user@example.com',   password:'password123', role:'user'   },
+          { id:2, name:'Priya Sharma', email:'vendor@example.com', password:'password123', role:'vendor' },
+          { id:3, name:'Suresh Babu',  email:'admin@example.com',  password:'password123', role:'admin'  }
+        ];
+        const found = demo.find(u => u.email === email && u.password === pw);
+        if (!found) throw new Error('Invalid email or password');
+        const { password: _, ...safe } = found;
+        user  = safe;
+        token = 'demo_token_' + Date.now();
+      } else {
+        throw fetchErr;
+      }
+    }
+
+    Auth.set(user, token);
+    showToast('Welcome back, ' + user.name.split(' ')[0] + '!');
+    setTimeout(() => {
+      window.location.href = user.role === 'admin' ? 'admin.html' : 'dashboard.html';
+    }, 900);
+
+  } catch (err) {
+    const errEl = document.getElementById('auth-error');
+    errEl.textContent   = err.message;
+    errEl.style.display = 'block';
+    document.getElementById('btn-text').textContent  = 'Sign In';
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('login-btn').disabled    = false;
+  }
+});
+</script>
+</body>
+</html>

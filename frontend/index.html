@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Cartora – Luxury Shopping</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Cart Overlay -->
+<div id="cart-overlay" class="cart-overlay"></div>
+
+<!-- Cart Sidebar -->
+<aside id="cart-sidebar" class="cart-sidebar">
+  <div class="cart-header">
+    <h3 class="serif">Your Bag <span style="font-size:14px;color:var(--light);font-family:'Jost',sans-serif" id="cart-hcount"></span></h3>
+    <button id="cart-close" style="font-size:24px;color:var(--mid)">×</button>
+  </div>
+  <div class="cart-body" id="cart-body"></div>
+  <div class="cart-footer" id="cart-footer"></div>
+</aside>
+
+<!-- Announcement Bar -->
+<div class="ann-bar">
+  <div class="container">
+    <div class="ann-track" id="ann-track"></div>
+  </div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">Cart<span>ora</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="products.html">Shop</a></li>
+      <li><a href="products.html?filter=new">New Arrivals</a></li>
+      <li><a href="products.html?filter=sale">Sale</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="nav-icon" id="search-toggle" title="Search">🔍</button>
+      <div id="user-wrap"></div>
+      <button class="nav-icon cart-open-btn" title="Cart" style="position:relative">
+        🛍️<span class="cart-count" style="display:none"></span>
+      </button>
+      <button class="hamburger" id="hamburger">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="index.html">Home</a>
+    <a href="products.html">Shop</a>
+    <a href="products.html?filter=new">New Arrivals</a>
+    <a href="products.html?filter=sale">Sale</a>
+    <a href="login.html">Login</a>
+  </div>
+  <!-- Search bar -->
+  <div id="search-bar" style="display:none;padding:12px 0;border-top:1px solid var(--border)">
+    <div class="container">
+      <div class="search-bar" style="max-width:500px;margin:0 auto">
+        <span>🔍</span>
+        <input type="text" id="search-input" placeholder="Search products…">
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <img class="hero-img" 
+    src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&q=80"
+    alt="Luxury Fashion Collection">
+  <div class="hero-overlay"></div>
+  <div class="container">
+    <div class="hero-content">
+      <span class="hero-label">New Collection 2025</span>
+      <h1>Dress With<br><em>Timeless Grace</em></h1>
+      <p>Discover curated luxury — where every piece tells a story of craftsmanship, elegance, and enduring style.</p>
+      <div class="hero-btns">
+        <a href="products.html" class="btn btn-primary">Shop Now &rarr;</a>
+        <a href="products.html?filter=new" class="btn btn-outline" style="border-color:rgba(255,255,255,0.6);color:#fff">New Arrivals</a>
+      </div>
+    </div>
+  </div>
+  <div class="hero-scroll">Explore</div>
+</section>
+
+<!-- Features Strip -->
+<div class="features">
+  <div class="container">
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="feature-icon">🚚</div>
+        <div>
+          <div class="feature-title">Free Shipping</div>
+          <div class="feature-sub">On orders over ₹15,000</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🔄</div>
+        <div>
+          <div class="feature-title">Easy Returns</div>
+          <div class="feature-sub">30-day return policy</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🔒</div>
+        <div>
+          <div class="feature-title">Secure Payment</div>
+          <div class="feature-sub">100% safe checkout</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🎧</div>
+        <div>
+          <div class="feature-title">24/7 Support</div>
+          <div class="feature-sub">Dedicated help team</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Categories -->
+<section style="background:var(--bg2)">
+  <div class="container">
+    <div class="section-header center">
+      <span class="section-label">Explore</span>
+      <h2 class="section-title">Shop by Category</h2>
+      <p class="section-sub">Find exactly what you're looking for across our premium collections</p>
+    </div>
+    <div class="cat-grid" id="cat-grid"></div>
+  </div>
+</section>
+
+<!-- Featured Products -->
+<section>
+  <div class="container">
+    <div class="section-header flex-between">
+      <div>
+        <span class="section-label">Handpicked</span>
+        <h2 class="section-title">Featured Products</h2>
+      </div>
+      <a href="products.html" class="btn btn-outline btn-sm">View All →</a>
+    </div>
+    <div class="grid-4" id="featured-grid"></div>
+  </div>
+</section>
+
+<!-- Banner -->
+<section style="background:var(--dark);padding:0">
+  <div class="container" style="display:grid;grid-template-columns:1fr 1fr;min-height:360px">
+    <div style="display:flex;flex-direction:column;justify-content:center;padding:60px 40px 60px 0">
+      <span class="section-label">Limited Time</span>
+      <h2 style="color:#fff;font-size:2.4rem;margin-bottom:16px">Up to 40% Off<br>Selected Items</h2>
+      <p style="color:rgba(255,255,255,0.6);margin-bottom:28px;font-size:15px">Exclusive deals on our finest collections. Shop before they're gone.</p>
+      <a href="products.html?filter=sale" class="btn btn-gold" style="align-self:flex-start">Shop the Sale →</a>
+    </div>
+    <div style="position:relative;overflow:hidden">
+      <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80"
+        alt="Sale Collection" style="width:100%;height:100%;object-fit:cover;opacity:0.7">
+    </div>
+  </div>
+</section>
+
+<!-- New Arrivals -->
+<section style="background:var(--bg2)">
+  <div class="container">
+    <div class="section-header center">
+      <span class="section-label">Just In</span>
+      <h2 class="section-title">New Arrivals</h2>
+    </div>
+    <div class="grid-4" id="new-grid"></div>
+  </div>
+</section>
+
+<!-- Newsletter -->
+<div class="newsletter">
+  <div class="container">
+    <span class="section-label" style="color:var(--gold)">Stay Updated</span>
+    <h2>Join the Cartora Circle</h2>
+    <p>Subscribe for exclusive access to new arrivals, members-only offers and styling tips.</p>
+    <form id="nl-form" class="newsletter-form">
+      <input type="email" placeholder="Your email address" required>
+      <button type="submit">Subscribe</button>
+    </form>
+    <p id="nl-success" style="color:var(--gold);margin-top:12px;display:none">
+      ✦ Welcome to the Cartora family! Check your inbox.
+    </p>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div style="font-family:'Playfair Display',serif;font-size:22px;color:#fff;font-weight:700">Cart<span style="color:var(--accent)">ora</span></div>
+        <p>A curated destination for timeless fashion and luxury lifestyle products. Crafted for the discerning individual.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Shop</h4>
+        <a href="products.html">All Products</a>
+        <a href="products.html?cat=Clothing">Clothing</a>
+        <a href="products.html?cat=Bags">Bags</a>
+        <a href="products.html?cat=Jewelry">Jewelry</a>
+        <a href="products.html?filter=sale">Sale</a>
+      </div>
+      <div class="footer-col">
+        <h4>Account</h4>
+        <a href="login.html">Login</a>
+        <a href="signup.html">Register</a>
+        <a href="dashboard.html">My Orders</a>
+        <a href="cart.html">My Cart</a>
+      </div>
+      <div class="footer-col">
+        <h4>Help</h4>
+        <a href="#">Shipping Policy</a>
+        <a href="#">Returns</a>
+        <a href="#">Size Guide</a>
+        <a href="#">Contact Us</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 Cartora. Built for Web Technologies – 24BIT0489</span>
+      <span>Made with ♡ in India</span>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+<script src="data.js"></script>
+<script>
+// Announcement bar
+const anns = [
+  "Free Shipping on Orders Over ₹15,000",
+  "New Collection 2025 — Just Arrived",
+  "Members Get 15% Off Every Order",
+  "Easy 30-Day Returns — No Questions Asked",
+  "Exclusive Deals on Premium Brands"
+];
+const track = document.getElementById('ann-track');
+// Duplicate for seamless loop
+[...anns, ...anns].forEach(a => {
+  const span = document.createElement('span');
+  span.textContent = a;
+  track.appendChild(span);
+});
+
+// Search toggle
+document.getElementById('search-toggle').addEventListener('click', () => {
+  const bar = document.getElementById('search-bar');
+  bar.style.display = bar.style.display === 'none' ? 'block' : 'none';
+  if (bar.style.display === 'block') document.getElementById('search-input').focus();
+});
+
+// Search input
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const q = e.target.value.trim();
+    if (q) window.location.href = 'products.html?q=' + encodeURIComponent(q);
+  }
+});
+
+// Render Categories
+const catGrid = document.getElementById('cat-grid');
+CATEGORIES.forEach(cat => {
+  catGrid.innerHTML += `
+    <a href="products.html?cat=${cat.name}" class="cat-card">
+      <img src="${cat.image}" alt="${cat.name}" loading="lazy">
+      <div class="cat-overlay"></div>
+      <div class="cat-info">
+        <h3>${cat.name}</h3>
+        <span>${cat.count} items</span>
+      </div>
+    </a>`;
+});
+
+// Render Featured Products
+const featured = PRODUCTS.filter(p => p.isFeatured).slice(0, 8);
+document.getElementById('featured-grid').innerHTML = featured.map(productCardHTML).join('');
+
+// Render New Arrivals
+const newArr = PRODUCTS.filter(p => p.isNew).slice(0, 4);
+document.getElementById('new-grid').innerHTML = newArr.map(productCardHTML).join('');
+
+function productCardHTML(p) {
+  const disc = p.originalPrice ? Math.round((p.originalPrice - p.price) / p.originalPrice * 100) : null;
+  return `
+    <div class="product-card">
+      <div class="product-img-wrap">
+        <a href="product.html?id=${p.id}">
+          <img src="${p.image}" alt="${p.name}" loading="lazy">
+        </a>
+        <div class="product-badges">
+          ${p.isNew ? '<span class="badge badge-new">New</span>' : ''}
+          ${disc ? `<span class="badge badge-sale">-${disc}%</span>` : ''}
+          ${!p.inStock ? '<span class="badge badge-out">Sold Out</span>' : ''}
+        </div>
+        <div class="product-actions">
+          <button class="action-btn" onclick="addToWishlist(${p.id})" title="Wishlist">♡</button>
+        </div>
+        <div class="atc-bar">
+          <button class="atc-btn" ${!p.inStock ? 'disabled' : ''}
+            onclick="Cart.add(PRODUCTS.find(x=>x.id===${p.id}))">
+            🛍️ ${p.inStock ? 'Add to Cart' : 'Out of Stock'}
+          </button>
+        </div>
+      </div>
+      <div class="product-info">
+        <div class="product-cat">${p.category}</div>
+        <div class="product-name"><a href="product.html?id=${p.id}">${p.name}</a></div>
+        <div class="stars">${'★'.repeat(Math.floor(p.rating))}${'☆'.repeat(5-Math.floor(p.rating))}<span>(${p.reviews})</span></div>
+        <div class="product-price">
+          <span class="price-curr">₹${p.price.toLocaleString('en-IN')}</span>
+          ${p.originalPrice ? `<span class="price-orig">₹${p.originalPrice.toLocaleString('en-IN')}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function addToWishlist(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  showToast(p.name + ' added to wishlist ♡');
+}
+</script>
+</body>
+</html>
