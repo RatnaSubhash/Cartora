@@ -80,7 +80,7 @@ const Auth = {
 // ── API Helper ───────────────────────────────
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:5000/api'
-  : 'https://cartora-production.up.railway.app/api';
+  : 'https://cartora.onrender.com/api';
 
 async function apiFetch(path, options = {}) {
   const token = Auth.getToken();
