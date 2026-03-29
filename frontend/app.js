@@ -78,9 +78,10 @@ const Auth = {
 };
 
 // ── API Helper ───────────────────────────────
-const API_URL = window.location.hostname === 'localhost'
+// Automatically works on localhost AND on any deployed server
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:5000/api'
-  : 'https://cartora.onrender.com/api';
+  : window.location.origin + '/api';
 
 async function apiFetch(path, options = {}) {
   const token = Auth.getToken();
@@ -116,7 +117,6 @@ function initNavbar() {
   Cart.updateBadge();
   const user = Auth.get();
 
-  // User icon / menu
   const userWrap = document.getElementById('user-wrap');
   if (userWrap) {
     if (user) {
@@ -138,7 +138,6 @@ function initNavbar() {
     }
   }
 
-  // Hamburger menu
   const ham = document.getElementById('hamburger');
   const mob = document.getElementById('mobile-menu');
   if (ham && mob) {
@@ -147,7 +146,6 @@ function initNavbar() {
     });
   }
 
-  // Cart sidebar open
   const cartBtn = document.querySelectorAll('.cart-open-btn');
   cartBtn.forEach(b => b.addEventListener('click', openCart));
 }
@@ -159,7 +157,7 @@ function logoutUser() {
 }
 
 // ── Cart Sidebar ─────────────────────────────
-function openCart()  {
+function openCart() {
   document.getElementById('cart-sidebar')?.classList.add('open');
   document.getElementById('cart-overlay')?.classList.add('open');
   renderCartSidebar();
@@ -187,12 +185,13 @@ function renderCartSidebar() {
     return;
   }
   const shipping = Cart.total() > 15000 ? 0 : 499;
-  const gst = Math.round(Cart.total() * 0.18);
-  const total = Cart.total() + shipping + gst;
+  const gst      = Math.round(Cart.total() * 0.18);
+  const total    = Cart.total() + shipping + gst;
 
   body.innerHTML = items.map(item => `
     <div class="cart-item">
-      <img class="cart-item-img" src="${item.image}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1560343090-f0409e92791a?w=100'">
+      <img class="cart-item-img" src="${item.image}" alt="${item.name}"
+        onerror="this.src='https://images.unsplash.com/photo-1560343090-f0409e92791a?w=100'">
       <div class="cart-item-info">
         <div class="cart-item-name">${item.name}</div>
         <div class="cart-item-price">${formatINR(item.price)}</div>
@@ -210,7 +209,10 @@ function renderCartSidebar() {
     <div class="cart-total-row"><span>Shipping</span><span>${shipping === 0 ? 'FREE' : formatINR(shipping)}</span></div>
     <div class="cart-total-row"><span>GST (18%)</span><span>${formatINR(gst)}</span></div>
     <div class="cart-grand"><span>Total</span><span>${formatINR(total)}</span></div>
-    <a href="checkout.html" class="btn btn-primary btn-full" style="margin-top:16px;text-align:center;justify-content:center">Proceed to Checkout</a>`;
+    <a href="checkout.html" class="btn btn-primary btn-full"
+      style="margin-top:16px;text-align:center;justify-content:center">
+      Proceed to Checkout
+    </a>`;
 }
 
 function changeQty(id, delta) {
@@ -245,11 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavbar();
   initNewsletter();
 
-  // Cart overlay close
   document.getElementById('cart-overlay')?.addEventListener('click', closeCart);
   document.getElementById('cart-close')?.addEventListener('click', closeCart);
 
-  // Active nav link highlight
   const current = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.nav-links a').forEach(a => {
     if (a.getAttribute('href') === current) a.classList.add('active');

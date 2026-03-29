@@ -173,8 +173,14 @@ async function initDatabase() {
 
   // ── Email Setup ─────────────────────────────
   const mailer = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS
+    },
+    tls: { rejectUnauthorized: false }
   });
 
   function emailConfigured() {
