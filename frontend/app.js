@@ -1,6 +1,6 @@
 /* ============================================
    CARTORA - Shared Utilities
-   cart.js  |  auth.js  |  ui helpers
+   Web Technologies Project | 24BIT0489
    ============================================ */
 
 // ── Toast Notification ──────────────────────
@@ -17,7 +17,7 @@ function showToast(msg, type = 'success') {
   t._timer = setTimeout(() => { t.className = ''; }, 3200);
 }
 
-// ── Cart Storage ─────────────────────────────
+// ── Cart ─────────────────────────────────────
 const Cart = {
   get() {
     try { return JSON.parse(localStorage.getItem('cartora_cart')) || []; }
@@ -30,42 +30,34 @@ const Cart = {
   add(product, qty = 1) {
     const items = Cart.get();
     const idx = items.findIndex(i => i.id === product.id);
-    if (idx > -1) {
-      items[idx].quantity += qty;
-    } else {
-      items.push({ ...product, quantity: qty });
-    }
+    if (idx > -1) items[idx].quantity += qty;
+    else items.push({ ...product, quantity: qty });
     Cart.save(items);
     showToast(product.name + ' added to cart');
   },
-  remove(id) {
-    Cart.save(Cart.get().filter(i => i.id !== id));
-  },
+  remove(id)  { Cart.save(Cart.get().filter(i => i.id !== id)); },
   updateQty(id, qty) {
     if (qty < 1) { Cart.remove(id); return; }
     const items = Cart.get();
-    const idx = items.findIndex(i => i.id === id);
+    const idx   = items.findIndex(i => i.id === id);
     if (idx > -1) { items[idx].quantity = qty; Cart.save(items); }
   },
-  clear() { localStorage.removeItem('cartora_cart'); Cart.updateBadge(); },
+  clear()  { localStorage.removeItem('cartora_cart'); Cart.updateBadge(); },
   total()  { return Cart.get().reduce((s, i) => s + i.price * i.quantity, 0); },
   count()  { return Cart.get().reduce((s, i) => s + i.quantity, 0); },
   updateBadge() {
     document.querySelectorAll('.cart-count').forEach(el => {
       const c = Cart.count();
-      el.textContent = c;
+      el.textContent  = c;
       el.style.display = c > 0 ? 'flex' : 'none';
     });
   }
 };
 
-// ── Auth Storage ─────────────────────────────
+// ── Auth ──────────────────────────────────────
 const Auth = {
-  get() {
-    try { return JSON.parse(localStorage.getItem('cartora_user')); }
-    catch { return null; }
-  },
-  getToken() { return localStorage.getItem('cartora_token'); },
+  get()       { try { return JSON.parse(localStorage.getItem('cartora_user')); } catch { return null; } },
+  getToken()  { return localStorage.getItem('cartora_token'); },
   set(user, token) {
     localStorage.setItem('cartora_user', JSON.stringify(user));
     localStorage.setItem('cartora_token', token);
@@ -77,15 +69,15 @@ const Auth = {
   isLoggedIn() { return !!Auth.getToken(); }
 };
 
-// ── API Helper ───────────────────────────────
-// Automatically works on localhost AND on any deployed server
+// ── API Helper ────────────────────────────────
+// Automatically detects localhost vs deployed server
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:5000/api'
   : window.location.origin + '/api';
 
 async function apiFetch(path, options = {}) {
   const token = Auth.getToken();
-  const res = await fetch(API_URL + path, {
+  const res   = await fetch(API_URL + path, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': 'Bearer ' + token } : {})
@@ -97,26 +89,15 @@ async function apiFetch(path, options = {}) {
   return data;
 }
 
-// ── Format Currency ──────────────────────────
+// ── Format Currency ───────────────────────────
 function formatINR(amount) {
   return '₹' + Number(amount).toLocaleString('en-IN');
 }
 
-// ── Star Rating HTML ─────────────────────────
-function starsHTML(rating) {
-  let html = '<div class="stars">';
-  for (let i = 1; i <= 5; i++) {
-    html += i <= Math.floor(rating) ? '★' : '☆';
-  }
-  html += '</div>';
-  return html;
-}
-
-// ── Navbar Setup ─────────────────────────────
+// ── Navbar ────────────────────────────────────
 function initNavbar() {
   Cart.updateBadge();
-  const user = Auth.get();
-
+  const user    = Auth.get();
   const userWrap = document.getElementById('user-wrap');
   if (userWrap) {
     if (user) {
@@ -137,7 +118,6 @@ function initNavbar() {
       userWrap.innerHTML = `<a href="login.html" class="nav-icon" title="Login">👤</a>`;
     }
   }
-
   const ham = document.getElementById('hamburger');
   const mob = document.getElementById('mobile-menu');
   if (ham && mob) {
@@ -145,9 +125,7 @@ function initNavbar() {
       mob.style.display = mob.style.display === 'block' ? 'none' : 'block';
     });
   }
-
-  const cartBtn = document.querySelectorAll('.cart-open-btn');
-  cartBtn.forEach(b => b.addEventListener('click', openCart));
+  document.querySelectorAll('.cart-open-btn').forEach(b => b.addEventListener('click', openCart));
 }
 
 function logoutUser() {
@@ -156,7 +134,7 @@ function logoutUser() {
   setTimeout(() => { window.location.href = 'index.html'; }, 1000);
 }
 
-// ── Cart Sidebar ─────────────────────────────
+// ── Cart Sidebar ──────────────────────────────
 function openCart() {
   document.getElementById('cart-sidebar')?.classList.add('open');
   document.getElementById('cart-overlay')?.classList.add('open');
@@ -166,7 +144,6 @@ function closeCart() {
   document.getElementById('cart-sidebar')?.classList.remove('open');
   document.getElementById('cart-overlay')?.classList.remove('open');
 }
-
 function renderCartSidebar() {
   const body = document.getElementById('cart-body');
   if (!body) return;
@@ -210,14 +187,10 @@ function renderCartSidebar() {
     <div class="cart-total-row"><span>GST (18%)</span><span>${formatINR(gst)}</span></div>
     <div class="cart-grand"><span>Total</span><span>${formatINR(total)}</span></div>
     <a href="checkout.html" class="btn btn-primary btn-full"
-      style="margin-top:16px;text-align:center;justify-content:center">
-      Proceed to Checkout
-    </a>`;
+      style="margin-top:16px;justify-content:center">Proceed to Checkout</a>`;
 }
-
 function changeQty(id, delta) {
-  const items = Cart.get();
-  const item  = items.find(i => i.id === id);
+  const item = Cart.get().find(i => i.id === id);
   if (item) Cart.updateQty(id, item.quantity + delta);
   renderCartSidebar();
 }
@@ -227,7 +200,7 @@ function removeFromCart(id) {
   showToast('Item removed', 'error');
 }
 
-// ── Newsletter ───────────────────────────────
+// ── Newsletter ────────────────────────────────
 function initNewsletter() {
   const form = document.getElementById('nl-form');
   if (!form) return;
@@ -235,21 +208,19 @@ function initNewsletter() {
     e.preventDefault();
     const email = form.querySelector('input[type=email]').value;
     if (!email) return;
-    const success = document.getElementById('nl-success');
     form.style.display = 'none';
-    if (success) success.style.display = 'block';
+    const s = document.getElementById('nl-success');
+    if (s) s.style.display = 'block';
     showToast('Subscribed! Thank you.');
   });
 }
 
-// ── Run on DOM ready ─────────────────────────
+// ── DOM Ready ─────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initNavbar();
   initNewsletter();
-
   document.getElementById('cart-overlay')?.addEventListener('click', closeCart);
   document.getElementById('cart-close')?.addEventListener('click', closeCart);
-
   const current = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.nav-links a').forEach(a => {
     if (a.getAttribute('href') === current) a.classList.add('active');

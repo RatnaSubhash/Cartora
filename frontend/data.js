@@ -119,12 +119,12 @@ const PRODUCTS = [
 ];
 
 const CATEGORIES = [
-  { name:"Clothing",    image:"https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&q=80", count:156 },
-  { name:"Bags",        image:"https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80", count:89  },
-  { name:"Shoes",       image:"https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&q=80", count:124 },
-  { name:"Watches",     image:"https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80", count:67  },
-  { name:"Jewelry",     image:"https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80", count:93  },
-  { name:"Accessories", image:"https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=400&q=80", count:78  },
-  { name:"Home",        image:"https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&q=80", count:112 },
-  { name:"Beauty",      image:"https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&q=80", count:45  }
+  { name:"Clothing",    image:"https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&q=80", count:3 },
+  { name:"Bags",        image:"https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80", count:2  },
+  { name:"Shoes",       image:"https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&q=80", count:2 },
+  { name:"Watches",     image:"https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80", count:1  },
+  { name:"Jewelry",     image:"https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80", count:2  },
+  { name:"Accessories", image:"https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=400&q=80", count:3  },
+  { name:"Home",        image:"https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&q=80", count:2 },
+  { name:"Beauty",      image:"https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&q=80", count:1  }
 ];

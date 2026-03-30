@@ -157,17 +157,12 @@ if (user) {
 
 // Load orders
 async function loadOrders() {
-  const DEMO_ORDERS = [
-    { id:'ORD-148221', date:'20-03-2025', status:'Delivered', total:38499, items:3 },
-    { id:'ORD-147903', date:'15-03-2025', status:'Shipped',   total:24299, items:2 },
-    { id:'ORD-146288', date:'10-03-2025', status:'Processing',total:108999,items:1 },
-  ];
-
-  let orders = DEMO_ORDERS;
+  let orders = [];
   try {
     orders = await apiFetch('/orders/my');
   } catch (_) {
-    // Use demo data if backend not running
+    // Backend not running — show empty state
+    orders = [];
   }
 
   document.getElementById('total-orders').textContent   = orders.length;
