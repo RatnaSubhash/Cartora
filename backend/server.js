@@ -1,7 +1,7 @@
 // ============================================
 // CARTORA Backend Server
-// Node.js + Express + sql.js + JWT + Email
-// Web Technologies Project | 24BIT0489
+// Node.js + Express + MongoDB (Mongoose) + JWT + Email
+// Migrated from SQLite / sql.js
 // ============================================
 
 const express    = require('express');
@@ -10,7 +10,7 @@ const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const path       = require('path');
-const fs         = require('fs');
+const mongoose   = require('mongoose');
 require('dotenv').config();
 
 const app  = express();
@@ -21,137 +21,86 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// ── Database Setup (sql.js — pure JS, no compilation needed) ──
-const initSqlJs = require('sql.js');
-const DB_PATH   = path.join(__dirname, 'cartora.db');
+// ══════════════════════════════════════════════
+// MONGOOSE SCHEMAS & MODELS
+// ══════════════════════════════════════════════
 
-let db; // will be set after sql.js loads
+// ── User ──────────────────────────────────────
+const userSchema = new mongoose.Schema({
+  name:        { type: String, required: true },
+  email:       { type: String, required: true, unique: true, lowercase: true },
+  phone:       { type: String, default: null },
+  password:    { type: String, required: true },
+  role:        { type: String, default: 'user', enum: ['user', 'admin'] },
+  is_verified: { type: Boolean, default: false },
+}, { timestamps: true });
+
+const User = mongoose.model('User', userSchema);
+
+// ── Email Verification (OTP) ──────────────────
+const verificationSchema = new mongoose.Schema({
+  email:      { type: String, required: true },
+  token:      { type: String, required: true },
+  expires_at: { type: Date,   required: true },
+}, { timestamps: true });
+
+const Verification = mongoose.model('Verification', verificationSchema);
+
+// ── Product ───────────────────────────────────
+const productSchema = new mongoose.Schema({
+  name:           { type: String, required: true },
+  price:          { type: Number, required: true },
+  original_price: { type: Number, default: null },
+  image:          { type: String, default: '' },
+  category:       { type: String, default: '' },
+  rating:         { type: Number, default: 0 },
+  reviews:        { type: Number, default: 0 },
+  description:    { type: String, default: '' },
+  in_stock:       { type: Boolean, default: true },
+  is_new:         { type: Boolean, default: false },
+  is_featured:    { type: Boolean, default: false },
+}, { timestamps: true });
+
+const Product = mongoose.model('Product', productSchema);
+
+// ── Order ─────────────────────────────────────
+const orderSchema = new mongoose.Schema({
+  order_id: { type: String, required: true, unique: true },
+  user_id:  { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  email:    { type: String, required: true },
+  name:     { type: String, default: '' },
+  total:    { type: Number, required: true },
+  status:   { type: String, default: 'Pending' },
+  address:  { type: String, default: '' },
+  items: [{
+    product_id: { type: String, required: true },
+    quantity:   { type: Number, required: true },
+    price:      { type: Number, required: true },
+  }]
+}, { timestamps: true });
+
+const Order = mongoose.model('Order', orderSchema);
+
+// ══════════════════════════════════════════════
+// CONNECT TO MONGODB & START SERVER
+// ══════════════════════════════════════════════
 
 async function initDatabase() {
-  const SQL = await initSqlJs();
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log('✅ Connected to MongoDB');
 
-  // Load existing DB file if it exists, otherwise create fresh
-  if (fs.existsSync(DB_PATH)) {
-    const fileBuffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(fileBuffer);
-  } else {
-    db = new SQL.Database();
-  }
-
-  // Save DB to file after every write
-  function saveDb() {
-    const data = db.export();
-    fs.writeFileSync(DB_PATH, Buffer.from(data));
-  }
-
-  // Create tables
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      name        TEXT    NOT NULL,
-      email       TEXT    UNIQUE NOT NULL,
-      phone       TEXT,
-      password    TEXT    NOT NULL,
-      role        TEXT    DEFAULT 'user',
-      is_verified INTEGER DEFAULT 0,
-      created_at  TEXT    DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS email_verifications (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      email      TEXT    NOT NULL,
-      token      TEXT    NOT NULL,
-      expires_at TEXT    NOT NULL,
-      created_at TEXT    DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS products (
-      id             INTEGER PRIMARY KEY AUTOINCREMENT,
-      name           TEXT    NOT NULL,
-      price          REAL    NOT NULL,
-      original_price REAL,
-      image          TEXT,
-      category       TEXT,
-      rating         REAL    DEFAULT 0,
-      reviews        INTEGER DEFAULT 0,
-      description    TEXT,
-      in_stock       INTEGER DEFAULT 1,
-      is_new         INTEGER DEFAULT 0,
-      is_featured    INTEGER DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS orders (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      order_id   TEXT    UNIQUE NOT NULL,
-      user_id    INTEGER,
-      email      TEXT    NOT NULL,
-      name       TEXT,
-      total      REAL    NOT NULL,
-      status     TEXT    DEFAULT 'Pending',
-      address    TEXT,
-      created_at TEXT    DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS order_items (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      order_id   TEXT    NOT NULL,
-      product_id INTEGER NOT NULL,
-      quantity   INTEGER NOT NULL,
-      price      REAL    NOT NULL
-    );
-  `);
-  saveDb();
-
-  // ── Helper functions to make sql.js feel like better-sqlite3 ──
-
-  // Run a statement with params (INSERT, UPDATE, DELETE)
-  function run(sql, params = []) {
-    db.run(sql, params);
-    saveDb();
-  }
-
-  // Get one row
-  function get(sql, params = []) {
-    const stmt   = db.prepare(sql);
-    stmt.bind(params);
-    if (stmt.step()) {
-      const row = stmt.getAsObject();
-      stmt.free();
-      return row;
-    }
-    stmt.free();
-    return null;
-  }
-
-  // Get all rows
-  function all(sql, params = []) {
-    const results = db.exec(sql, params);
-    if (!results.length) return [];
-    const { columns, values } = results[0];
-    return values.map(row => {
-      const obj = {};
-      columns.forEach((col, i) => { obj[col] = row[i]; });
-      return obj;
-    });
-  }
-
-  // Get last inserted row id
-  function lastId() {
-    return get('SELECT last_insert_rowid() as id').id;
-  }
-
-  // Seed demo users if not already there
-  const adminExists = get('SELECT id FROM users WHERE email = ?', ['admin@example.com']);
+  // ── Seed demo users if not present ──────────
+  const adminExists = await User.findOne({ email: 'admin@example.com' });
   if (!adminExists) {
     const hash = bcrypt.hashSync('password123', 10);
-    run('INSERT INTO users (name, email, password, role, is_verified) VALUES (?,?,?,?,1)',
-      ['Suresh Babu', 'admin@example.com', hash, 'admin']);
-    run('INSERT INTO users (name, email, password, role, is_verified) VALUES (?,?,?,?,1)',
-      ['Ravi Kumar', 'user@example.com', hash, 'user']);
+    await User.create([
+      { name: 'Suresh Babu', email: 'admin@example.com', password: hash, role: 'admin', is_verified: true },
+      { name: 'Ravi Kumar',  email: 'user@example.com',  password: hash, role: 'user',  is_verified: true },
+    ]);
     console.log('✅ Demo users seeded');
   }
 
-  // ── JWT Middleware ──────────────────────────
+  // ── JWT Middleware ───────────────────────────
   function authRequired(req, res, next) {
     const header = req.headers['authorization'];
     const token  = header && header.split(' ')[1];
@@ -171,7 +120,7 @@ async function initDatabase() {
     });
   }
 
-  // ── Email Setup ─────────────────────────────
+  // ── Email Setup ──────────────────────────────
   const mailer = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -254,7 +203,6 @@ async function initDatabase() {
     }
   }
 
-  // Send password reset email
   async function sendPasswordResetEmail(email, name, otp) {
     if (!emailConfigured()) {
       console.log('\n──────────────────────────────────────────');
@@ -279,7 +227,7 @@ async function initDatabase() {
             </p>
             <div style="background:#fff;border-radius:10px;padding:28px;text-align:center;margin:0 0 28px;border:1px solid #e2d9cf">
               <p style="margin:0 0 8px;font-size:13px;color:#b5a89a;letter-spacing:1px">RESET CODE</p>
-              <div style="font-size:44px;font-weight:700;letter-spacing:12px;color:#3b2f27;font-family:Georgia,serif">${otp}</div>
+              <div style="font-size:44px;font-weight:700;letter-spacing:12px;color:#3b2f27">${otp}</div>
             </div>
             <p style="color:#7a6a5f;font-size:14px;margin:0 0 8px">
               If you did not request a password reset, you can safely ignore this email.
@@ -295,7 +243,9 @@ async function initDatabase() {
     }
   }
 
-  // ── AUTH ROUTES ──────────────────────────────
+  // ══════════════════════════════════════════════
+  // AUTH ROUTES
+  // ══════════════════════════════════════════════
 
   // POST /api/auth/register
   app.post('/api/auth/register', async (req, res) => {
@@ -303,19 +253,17 @@ async function initDatabase() {
     if (!name || !email || !password)
       return res.status(400).json({ error: 'Name, email and password are required' });
 
-    const exists = get('SELECT id FROM users WHERE email = ?', [email]);
+    const exists = await User.findOne({ email: email.toLowerCase() });
     if (exists) return res.status(400).json({ error: 'An account with this email already exists' });
 
     const hash = bcrypt.hashSync(password, 10);
-    run('INSERT INTO users (name, email, phone, password, is_verified) VALUES (?,?,?,?,0)',
-      [name, email, phone || null, hash]);
+    await User.create({ name, email, phone: phone || null, password: hash });
 
     const otp     = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
 
-    run('DELETE FROM email_verifications WHERE email = ?', [email]);
-    run('INSERT INTO email_verifications (email, token, expires_at) VALUES (?,?,?)',
-      [email, otp, expires]);
+    await Verification.deleteMany({ email });
+    await Verification.create({ email, token: otp, expires_at: expires });
 
     await sendVerificationEmail(email, name, otp);
 
@@ -326,35 +274,34 @@ async function initDatabase() {
   });
 
   // POST /api/auth/verify
-  app.post('/api/auth/verify', (req, res) => {
+  app.post('/api/auth/verify', async (req, res) => {
     const { email, token } = req.body;
     if (!email || !token) return res.status(400).json({ error: 'Email and code are required' });
 
-    const row = get(
-      'SELECT * FROM email_verifications WHERE email = ? AND token = ?',
-      [email, token.trim()]
-    );
-
+    const row = await Verification.findOne({ email, token: token.trim() });
     if (!row) return res.status(400).json({ error: 'Invalid verification code. Please try again.' });
 
-    if (new Date() > new Date(row.expires_at)) {
-      run('DELETE FROM email_verifications WHERE email = ?', [email]);
+    if (new Date() > row.expires_at) {
+      await Verification.deleteMany({ email });
       return res.status(400).json({ error: 'This code has expired. Please request a new one.' });
     }
 
-    run('UPDATE users SET is_verified = 1 WHERE email = ?', [email]);
-    run('DELETE FROM email_verifications WHERE email = ?', [email]);
+    const user = await User.findOneAndUpdate(
+      { email },
+      { is_verified: true },
+      { new: true }
+    );
+    await Verification.deleteMany({ email });
 
-    const user     = get('SELECT * FROM users WHERE email = ?', [email]);
     const jwtToken = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
     res.json({
       message: 'Email verified! Welcome to Cartora.',
-      user:  { id: user.id, name: user.name, email: user.email, role: user.role },
+      user:  { id: user._id, name: user.name, email: user.email, role: user.role },
       token: jwtToken
     });
   });
@@ -364,27 +311,26 @@ async function initDatabase() {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
-    const user = get('SELECT * FROM users WHERE email = ?', [email]);
-    if (!user)             return res.status(404).json({ error: 'No account found with this email' });
-    if (user.is_verified)  return res.status(400).json({ error: 'This email is already verified' });
+    const user = await User.findOne({ email });
+    if (!user)            return res.status(404).json({ error: 'No account found with this email' });
+    if (user.is_verified) return res.status(400).json({ error: 'This email is already verified' });
 
     const otp     = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
 
-    run('DELETE FROM email_verifications WHERE email = ?', [email]);
-    run('INSERT INTO email_verifications (email, token, expires_at) VALUES (?,?,?)',
-      [email, otp, expires]);
+    await Verification.deleteMany({ email });
+    await Verification.create({ email, token: otp, expires_at: expires });
 
     await sendVerificationEmail(email, user.name, otp);
     res.json({ message: 'A new verification code has been sent.' });
   });
 
   // POST /api/auth/login
-  app.post('/api/auth/login', (req, res) => {
+  app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-    const row = get('SELECT * FROM users WHERE email = ?', [email]);
+    const row = await User.findOne({ email: email.toLowerCase() });
     if (!row) return res.status(400).json({ error: 'Invalid email or password' });
 
     if (!bcrypt.compareSync(password, row.password))
@@ -398,9 +344,9 @@ async function initDatabase() {
       });
     }
 
-    const user  = { id: row.id, name: row.name, email: row.email, phone: row.phone, role: row.role };
+    const user  = { id: row._id, name: row.name, email: row.email, phone: row.phone, role: row.role };
     const token = jwt.sign(
-      { id: row.id, email: row.email, role: row.role },
+      { id: row._id, email: row.email, role: row.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -408,34 +354,26 @@ async function initDatabase() {
   });
 
   // POST /api/auth/forgot-password
-  // Generates a reset OTP and emails it to the user
   app.post('/api/auth/forgot-password', async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
-    const user = get('SELECT * FROM users WHERE email = ?', [email]);
-    // Always return success even if email not found — security best practice
-    // (don't reveal which emails are registered)
-    if (!user) {
-      return res.json({ message: 'If this email exists, a reset code has been sent.' });
-    }
+    const user = await User.findOne({ email });
+    if (!user) return res.json({ message: 'If this email exists, a reset code has been sent.' });
 
     const otp     = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
+    const resetKey = 'reset_' + email;
 
-    // Reuse email_verifications table with a "reset_" prefix to distinguish
-    run('DELETE FROM email_verifications WHERE email = ?', ['reset_' + email]);
-    run('INSERT INTO email_verifications (email, token, expires_at) VALUES (?,?,?)',
-      ['reset_' + email, otp, expires]);
+    await Verification.deleteMany({ email: resetKey });
+    await Verification.create({ email: resetKey, token: otp, expires_at: expires });
 
     await sendPasswordResetEmail(email, user.name, otp);
-
     res.json({ message: 'Reset code sent to your email.' });
   });
 
   // POST /api/auth/reset-password
-  // Verifies OTP and sets the new password
-  app.post('/api/auth/reset-password', (req, res) => {
+  app.post('/api/auth/reset-password', async (req, res) => {
     const { email, token, newPassword } = req.body;
     if (!email || !token || !newPassword)
       return res.status(400).json({ error: 'Email, code and new password are required' });
@@ -443,46 +381,48 @@ async function initDatabase() {
     if (newPassword.length < 8)
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
 
-    const row = get(
-      'SELECT * FROM email_verifications WHERE email = ? AND token = ?',
-      ['reset_' + email, token.trim()]
-    );
+    const resetKey = 'reset_' + email;
+    const row = await Verification.findOne({ email: resetKey, token: token.trim() });
 
     if (!row)
       return res.status(400).json({ error: 'Invalid reset code. Please check and try again.' });
 
-    if (new Date() > new Date(row.expires_at)) {
-      run('DELETE FROM email_verifications WHERE email = ?', ['reset_' + email]);
+    if (new Date() > row.expires_at) {
+      await Verification.deleteMany({ email: resetKey });
       return res.status(400).json({ error: 'This code has expired. Please request a new one.' });
     }
 
-    // Update password and clean up token
     const hash = bcrypt.hashSync(newPassword, 10);
-    run('UPDATE users SET password = ? WHERE email = ?', [hash, email]);
-    run('DELETE FROM email_verifications WHERE email = ?', ['reset_' + email]);
+    await User.updateOne({ email }, { password: hash });
+    await Verification.deleteMany({ email: resetKey });
 
     res.json({ message: 'Password reset successfully! You can now log in.' });
   });
 
-  // ── PRODUCT ROUTES ───────────────────────────
+  // ══════════════════════════════════════════════
+  // PRODUCT ROUTES
+  // ══════════════════════════════════════════════
 
-  app.get('/api/products', (req, res) => {
+  app.get('/api/products', async (req, res) => {
     const { category, featured, search } = req.query;
-    let sql    = 'SELECT * FROM products WHERE 1=1';
-    const args = [];
-    if (category) { sql += ' AND category = ?'; args.push(category); }
-    if (featured) { sql += ' AND is_featured = 1'; }
-    if (search)   { sql += ' AND name LIKE ?'; args.push('%' + search + '%'); }
-    res.json(all(sql, args));
+    const filter = {};
+    if (category) filter.category   = category;
+    if (featured) filter.is_featured = true;
+    if (search)   filter.name       = { $regex: search, $options: 'i' };
+    const products = await Product.find(filter);
+    // Return with `id` field for frontend compatibility
+    res.json(products.map(p => ({ ...p.toObject(), id: p._id })));
   });
 
-  app.get('/api/products/:id', (req, res) => {
-    const row = get('SELECT * FROM products WHERE id = ?', [req.params.id]);
-    if (!row) return res.status(404).json({ error: 'Product not found' });
-    res.json(row);
+  app.get('/api/products/:id', async (req, res) => {
+    const product = await Product.findById(req.params.id).catch(() => null);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json({ ...product.toObject(), id: product._id });
   });
 
-  // ── ORDER ROUTES ─────────────────────────────
+  // ══════════════════════════════════════════════
+  // ORDER ROUTES
+  // ══════════════════════════════════════════════
 
   app.post('/api/orders', async (req, res) => {
     const { orderId, email, name, items, total, address } = req.body;
@@ -493,121 +433,144 @@ async function initDatabase() {
     let userId   = null;
     try { if (token) userId = jwt.verify(token, process.env.JWT_SECRET).id; } catch {}
 
-    run('INSERT INTO orders (order_id, user_id, email, name, total, address) VALUES (?,?,?,?,?,?)',
-      [orderId, userId, email, name || '', total, address || '']);
+    const orderItems = items.map(item => ({
+      product_id: String(item.productId),
+      quantity:   item.quantity,
+      price:      item.price
+    }));
 
-    items.forEach(item => {
-      run('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?,?,?,?)',
-        [orderId, item.productId, item.quantity, item.price]);
-    });
+    await Order.create({ order_id: orderId, user_id: userId, email, name: name || '', total, address: address || '', items: orderItems });
 
     sendOrderEmail(email, name || 'Customer', orderId, total);
     res.status(201).json({ success: true, orderId });
   });
 
-  app.get('/api/orders/my', authRequired, (req, res) => {
-    const rows = all(
-      'SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC',
-      [req.user.id]
-    );
-    const formatted = rows.map(o => ({
-      ...o,
-      date:  new Date(o.created_at).toLocaleDateString('en-IN'),
-      items: (get('SELECT COUNT(*) as cnt FROM order_items WHERE order_id = ?', [o.order_id]) || {}).cnt || 0
+  app.get('/api/orders/my', authRequired, async (req, res) => {
+    const orders = await Order.find({ user_id: req.user.id }).sort({ createdAt: -1 });
+    const formatted = orders.map(o => ({
+      ...o.toObject(),
+      id:    o._id,
+      date:  new Date(o.createdAt).toLocaleDateString('en-IN'),
+      items: o.items.length
     }));
     res.json(formatted);
   });
 
-  app.get('/api/admin/orders', adminRequired, (req, res) => {
-    res.json(all('SELECT * FROM orders ORDER BY created_at DESC'));
+  // ══════════════════════════════════════════════
+  // ADMIN ROUTES
+  // ══════════════════════════════════════════════
+
+  app.get('/api/admin/orders', adminRequired, async (req, res) => {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders.map(o => ({ ...o.toObject(), id: o._id })));
   });
 
-  app.patch('/api/admin/orders/:orderId/status', adminRequired, (req, res) => {
-    run('UPDATE orders SET status = ? WHERE order_id = ?', [req.body.status, req.params.orderId]);
+  app.patch('/api/admin/orders/:orderId/status', adminRequired, async (req, res) => {
+    await Order.updateOne({ order_id: req.params.orderId }, { status: req.body.status });
     res.json({ success: true });
   });
 
-  app.get('/api/admin/stats', adminRequired, (req, res) => {
+  app.get('/api/admin/stats', adminRequired, async (req, res) => {
+    const [totalUsers, totalOrders, revenueResult, pendingOrders] = await Promise.all([
+      User.countDocuments(),
+      Order.countDocuments(),
+      Order.aggregate([{ $group: { _id: null, total: { $sum: '$total' } } }]),
+      Order.countDocuments({ status: 'Pending' })
+    ]);
     res.json({
-      totalUsers:    (get('SELECT COUNT(*) as n FROM users') || {}).n || 0,
-      totalOrders:   (get('SELECT COUNT(*) as n FROM orders') || {}).n || 0,
-      totalRevenue:  (get('SELECT COALESCE(SUM(total),0) as n FROM orders') || {}).n || 0,
-      pendingOrders: (get("SELECT COUNT(*) as n FROM orders WHERE status='Pending'") || {}).n || 0
+      totalUsers,
+      totalOrders,
+      totalRevenue:  revenueResult[0]?.total || 0,
+      pendingOrders
     });
   });
 
   // GET all users
-  app.get('/api/admin/users', adminRequired, (req, res) => {
-    res.json(all('SELECT id, name, email, role, is_verified, created_at FROM users ORDER BY id DESC'));
+  app.get('/api/admin/users', adminRequired, async (req, res) => {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json(users.map(u => ({
+      id:          u._id,
+      name:        u.name,
+      email:       u.email,
+      role:        u.role,
+      is_verified: u.is_verified,
+      created_at:  u.createdAt
+    })));
   });
 
   // PATCH — edit user name and role
-  app.patch('/api/admin/users/:id', adminRequired, (req, res) => {
+  app.patch('/api/admin/users/:id', adminRequired, async (req, res) => {
     const { name, role } = req.body;
     if (!name || !role) return res.status(400).json({ error: 'Name and role required' });
-    const exists = get('SELECT id FROM users WHERE id = ?', [req.params.id]);
-    if (!exists) return res.status(404).json({ error: 'User not found' });
-    run('UPDATE users SET name = ?, role = ? WHERE id = ?', [name, role, req.params.id]);
+    const user = await User.findByIdAndUpdate(req.params.id, { name, role }).catch(() => null);
+    if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ success: true });
   });
 
   // PATCH — manually verify a user's email
-  app.patch('/api/admin/users/:id/verify', adminRequired, (req, res) => {
-    const exists = get('SELECT id FROM users WHERE id = ?', [req.params.id]);
-    if (!exists) return res.status(404).json({ error: 'User not found' });
-    run('UPDATE users SET is_verified = 1 WHERE id = ?', [req.params.id]);
+  app.patch('/api/admin/users/:id/verify', adminRequired, async (req, res) => {
+    const user = await User.findByIdAndUpdate(req.params.id, { is_verified: true }).catch(() => null);
+    if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ success: true });
   });
 
-  // DELETE — remove a user (cannot delete admins)
-  app.delete('/api/admin/users/:id', adminRequired, (req, res) => {
-    const user = get('SELECT * FROM users WHERE id = ?', [req.params.id]);
+  // DELETE — remove a user
+  app.delete('/api/admin/users/:id', adminRequired, async (req, res) => {
+    const user = await User.findById(req.params.id).catch(() => null);
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.role === 'admin') return res.status(403).json({ error: 'Cannot delete admin accounts' });
-    run('DELETE FROM users WHERE id = ?', [req.params.id]);
+    await User.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   });
 
   // GET all products (admin)
-  app.get('/api/admin/products', adminRequired, (req, res) => {
-    res.json(all('SELECT * FROM products ORDER BY id DESC'));
+  app.get('/api/admin/products', adminRequired, async (req, res) => {
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json(products.map(p => ({ ...p.toObject(), id: p._id })));
   });
 
   // POST — add new product
-  app.post('/api/admin/products', adminRequired, (req, res) => {
+  app.post('/api/admin/products', adminRequired, async (req, res) => {
     const { name, price, original_price, category, image, description, in_stock, is_new, is_featured } = req.body;
     if (!name || !price) return res.status(400).json({ error: 'Name and price are required' });
-    run(
-      'INSERT INTO products (name, price, original_price, category, image, description, in_stock, is_new, is_featured, rating, reviews) VALUES (?,?,?,?,?,?,?,?,?,0,0)',
-      [name, price, original_price || null, category || '', image || '', description || '', in_stock || 1, is_new || 0, is_featured || 0]
-    );
-    const newId = get('SELECT last_insert_rowid() as id').id;
-    res.status(201).json({ success: true, id: newId });
+    const product = await Product.create({
+      name, price,
+      original_price: original_price || null,
+      category:       category    || '',
+      image:          image       || '',
+      description:    description || '',
+      in_stock:       in_stock !== undefined ? Boolean(in_stock)    : true,
+      is_new:         is_new   !== undefined ? Boolean(is_new)      : false,
+      is_featured:    is_featured !== undefined ? Boolean(is_featured) : false,
+    });
+    res.status(201).json({ success: true, id: product._id });
   });
 
   // PATCH — update product
-  app.patch('/api/admin/products/:id', adminRequired, (req, res) => {
+  app.patch('/api/admin/products/:id', adminRequired, async (req, res) => {
     const { name, price, original_price, category, image, description, in_stock, is_new, is_featured } = req.body;
-    const exists = get('SELECT id FROM products WHERE id = ?', [req.params.id]);
-    if (!exists) return res.status(404).json({ error: 'Product not found' });
-    run(
-      'UPDATE products SET name=?, price=?, original_price=?, category=?, image=?, description=?, in_stock=?, is_new=?, is_featured=? WHERE id=?',
-      [name, price, original_price || null, category, image, description, in_stock, is_new, is_featured, req.params.id]
-    );
+    const product = await Product.findByIdAndUpdate(req.params.id, {
+      name, price,
+      original_price: original_price || null,
+      category, image, description,
+      in_stock:    Boolean(in_stock),
+      is_new:      Boolean(is_new),
+      is_featured: Boolean(is_featured)
+    }).catch(() => null);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
     res.json({ success: true });
   });
 
   // DELETE — remove product
-  app.delete('/api/admin/products/:id', adminRequired, (req, res) => {
-    const exists = get('SELECT id FROM products WHERE id = ?', [req.params.id]);
-    if (!exists) return res.status(404).json({ error: 'Product not found' });
-    run('DELETE FROM products WHERE id = ?', [req.params.id]);
+  app.delete('/api/admin/products/:id', adminRequired, async (req, res) => {
+    const product = await Product.findByIdAndDelete(req.params.id).catch(() => null);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
     res.json({ success: true });
   });
 
   // ── Health check ─────────────────────────────
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Cartora API running ✅', time: new Date().toISOString() });
+    res.json({ status: 'ok', message: 'Cartora API running ✅ (MongoDB)', time: new Date().toISOString() });
   });
 
   // Catch-all — serve frontend
@@ -622,6 +585,7 @@ async function initDatabase() {
   ║   CARTORA Backend Running            ║
   ║   http://localhost:${PORT}              ║
   ║   API: http://localhost:${PORT}/api     ║
+  ║   DB:  MongoDB ✅                    ║
   ╚══════════════════════════════════════╝
     `);
     if (!emailConfigured()) {
